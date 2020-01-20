@@ -1,4 +1,4 @@
-// taken from: https://avro.apache.org/docs/1.9.1/idl.html
+// taken from: https://avro.apache.org/docs/1.8.2/idl.html
 
 /**
  * An example protocol in Avro IDL
