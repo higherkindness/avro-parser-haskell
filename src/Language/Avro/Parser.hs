@@ -61,7 +61,7 @@ parseFullName (T.splitOn "." -> components) = S.TN {baseName, namespace}
     baseName = last components
     namespace = filter (/= "") $ init components
 
-schemaType :: MonadParsec Char T.Text m => m S.Type
+schemaType :: MonadParsec Char T.Text m => m S.Schema
 schemaType =
   Null <$ reserved "null"
     <|> Boolean <$ reserved "boolean"
