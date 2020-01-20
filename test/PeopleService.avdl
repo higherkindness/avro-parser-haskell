@@ -1,3 +1,5 @@
+// https://github.com/higherkindness/mu-scala/blob/master/modules/examples/seed/server/modules/protocol_avro/src/main/resources/PeopleService.avdl
+
 @namespace("example.seed.server.protocol.avro")
 protocol PeopleService {
   import idl "People.avdl";
