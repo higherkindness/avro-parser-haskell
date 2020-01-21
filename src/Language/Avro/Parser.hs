@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE ViewPatterns #-}
 
 module Language.Avro.Parser where
 
@@ -55,11 +54,12 @@ ident =
 identifier :: MonadParsec Char T.Text m => m T.Text
 identifier = lexeme ident
 
-parseFullName :: T.Text -> TypeName
-parseFullName (T.splitOn "." -> components) = S.TN {baseName, namespace}
+parseNamedType :: [T.Text] -> TypeName
+parseNamedType [] = error "named types cannot be empty"
+parseNamedType xs = S.TN {baseName, namespace}
   where
-    baseName = last components
-    namespace = filter (/= "") $ init components
+    baseName = last xs
+    namespace = filter (/= "") $ init xs
 
 schemaType :: MonadParsec Char T.Text m => m S.Schema
 schemaType =
@@ -73,9 +73,9 @@ schemaType =
     <|> String <$ reserved "string"
     <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
     <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
--- TODO:
--- <|> NamedType <$> (symbol "@" *> betweenParens S.parseFullname)
--- <|> Record <$ reserved "record"
--- <|> Enum <$ reserved "enum"
--- <|> Union <$ reserved "union"
--- <|> Fixed <$ reserved "fixed"
+    -- TODO:
+    -- <|> Record <$ reserved "record"
+    -- <|> Enum <$ reserved "enum"
+    -- <|> Union <$ reserved "union"
+    -- <|> Fixed <$ reserved "fixed"
+    <|> NamedType . parseNamedType <$> lexeme (sepBy1 identifier $ char '.')
