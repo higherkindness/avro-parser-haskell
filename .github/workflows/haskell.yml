@@ -36,5 +36,7 @@ jobs:
         cabal new-update
         cabal new-configure --write-ghc-environment-files=always -j2
         cabal new-build --only-dependencies
-    - name: Build
-      run: cabal v2-build
+    - name: Build & Run Tests
+      run: |
+        cabal v2-build
+        cabal v2-test
