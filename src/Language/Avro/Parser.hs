@@ -50,7 +50,7 @@ betweenDiamonds = between (symbol "<") (symbol ">")
 
 ident :: MonadParsec Char T.Text m => m T.Text
 ident =
-  (\h t -> T.pack (h : t)) <$> letterChar <*> many (alphaNumChar <|> char '_')
+  (T.pack .) . (:) <$> letterChar <*> many (alphaNumChar <|> char '_' <|> char '-')
 
 identifier :: MonadParsec Char T.Text m => m T.Text
 identifier = lexeme ident
@@ -61,6 +61,17 @@ parseNamedType xs = S.TN {baseName, namespace}
   where
     baseName = last xs
     namespace = filter (/= "") $ init xs
+
+parseAnnotation :: MonadParsec Char T.Text m => m Annotation
+parseAnnotation =
+  symbol "@"
+    *> ( Namespace <$ reserved "namespace" <*> betweenParens stringLiteral
+           <|> Order <$ reserved "order" <*> betweenParens stringLiteral
+           <|> Aliases <$ reserved "aliases"
+             <*> betweenParens
+               (betweenSquares $ lexeme $ sepBy1 stringLiteral $ symbol ",")
+           <|> OtherAnnotation <$> identifier <*> betweenParens stringLiteral
+       )
 
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
