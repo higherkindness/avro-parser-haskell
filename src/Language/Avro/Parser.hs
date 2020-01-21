@@ -9,6 +9,7 @@ import Data.Avro.Schema as S
 import qualified Data.Avro.Types as AT
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Language.Avro.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -60,6 +61,17 @@ parseNamedType xs = S.TN {baseName, namespace}
   where
     baseName = last xs
     namespace = filter (/= "") $ init xs
+
+parseImport :: MonadParsec Char T.Text m => m ImportType
+parseImport =
+  reserved "import"
+    *> ( importHelper IdlImport "idl"
+           <|> importHelper ProtocolImport "protocol"
+           <|> importHelper SchemaImport "schema"
+       )
+
+importHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
+importHelper ct t = ct <$> (reserved t *> stringLiteral <* symbol ";")
 
 schemaType :: MonadParsec Char T.Text m => m S.Schema
 schemaType =

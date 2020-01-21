@@ -13,7 +13,7 @@ data Annotation
   deriving (Eq, Show)
 
 data ImportType
-  = IdlImport
-  | ProtocolImport
-  | SchemaImport
+  = IdlImport T.Text
+  | ProtocolImport T.Text
+  | SchemaImport T.Text
   deriving (Eq, Show)
