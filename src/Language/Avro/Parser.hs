@@ -65,13 +65,13 @@ parseNamedType xs = S.TN {baseName, namespace}
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
   reserved "import"
-    *> ( importHelper IdlImport "idl"
-           <|> importHelper ProtocolImport "protocol"
-           <|> importHelper SchemaImport "schema"
+    *> ( impHelper IdlImport "idl"
+           <|> impHelper ProtocolImport "protocol"
+           <|> impHelper SchemaImport "schema"
        )
-
-importHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
-importHelper ct t = ct <$> (reserved t *> stringLiteral <* symbol ";")
+  where
+    impHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
+    impHelper ct t = ct <$> (reserved t *> stringLiteral <* symbol ";")
 
 schemaType :: MonadParsec Char T.Text m => m S.Schema
 schemaType =
