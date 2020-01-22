@@ -6,11 +6,22 @@ module Main
 where
 
 import Data.Avro.Schema
+import Data.Text as T
 import Data.Vector (fromList)
 import Language.Avro.Parser
 import Language.Avro.Types
 import Test.Hspec
 import Text.Megaparsec (parse)
+
+enumTest :: T.Text
+enumTest =
+  T.unlines
+    [ "enum Kind {",
+      "FOO,",
+      "BAR, // the bar enum value",
+      "BAZ",
+      "}"
+    ]
 
 main :: IO ()
 main = hspec $ do
@@ -70,7 +81,9 @@ main = hspec $ do
     it "should parse fixeds" $
       parse schemaType "" "fixed MD5(16);"
         `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16) -- TODO: test with aliases!
-    it "should parse enums" $
+    it "should parse enums" $ do
+      parse schemaType "" enumTest
+        `shouldBe` (Right $ Enum (TN "Kind" []) [] Nothing (fromList ["FOO", "BAR", "BAZ"]))
       parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }" -- TODO: test with aliases and docs!
         `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
