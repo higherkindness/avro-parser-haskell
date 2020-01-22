@@ -5,10 +5,11 @@
 module Language.Avro.Parser where
 
 import Data.Avro
-import Data.Avro.Schema as S
+import Data.Avro.Schema
 import qualified Data.Avro.Types as AT
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
+import Data.Vector (Vector, fromList)
 import Language.Avro.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -57,7 +58,7 @@ identifier = lexeme ident
 
 parseNamedType :: [T.Text] -> TypeName
 parseNamedType [] = error "named types cannot be empty"
-parseNamedType xs = S.TN {baseName, namespace}
+parseNamedType xs = TN {baseName, namespace}
   where
     baseName = last xs
     namespace = filter (/= "") $ init xs
@@ -84,7 +85,15 @@ parseImport =
     impHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
     impHelper ct t = ct <$> (reserved t *> stringLiteral <* symbol ";")
 
-schemaType :: MonadParsec Char T.Text m => m S.Schema
+parseProtocol :: MonadParsec Char T.Text m => m Protocol
+parseProtocol =
+  Protocol <$ reserved "protocol" <*> identifier
+    <*> betweenBraces (many stringLiteral) -- TODO: here goes more things!
+
+parseUnion :: MonadParsec Char T.Text m => m (Vector Schema)
+parseUnion = fromList <$> betweenBraces (lexeme $ sepBy1 schemaType $ symbol ",")
+
+schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =
   Null <$ reserved "null"
     <|> Boolean <$ reserved "boolean"
@@ -96,9 +105,9 @@ schemaType =
     <|> String <$ reserved "string"
     <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
     <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
+    <|> Union <$ reserved "union" <*> parseUnion
     -- TODO:
     -- <|> Record <$ reserved "record"
     -- <|> Enum <$ reserved "enum"
-    -- <|> Union <$ reserved "union"
     -- <|> Fixed <$ reserved "fixed"
     <|> NamedType . parseNamedType <$> lexeme (sepBy1 identifier $ char '.')

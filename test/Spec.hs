@@ -6,11 +6,11 @@ module Main
 where
 
 import Data.Avro.Schema
+import Data.Vector (fromList)
 import Language.Avro.Parser
 import Language.Avro.Types
 import Test.Hspec
-import Test.Hspec.Megaparsec
-import Text.Megaparsec
+import Text.Megaparsec (parse)
 
 main :: IO ()
 main = hspec $ do
@@ -64,6 +64,9 @@ main = hspec $ do
       parse schemaType "" "map<int>" `shouldBe` (Right $ Map Int)
       parse schemaType "" "map<map<string>>"
         `shouldBe` (Right $ Map $ Map String)
+    it "should parse unions" $
+      parse schemaType "" "union { string, int, null }"
+        `shouldBe` (Right $ Union $ fromList [String, Int, Null])
     it "should parse named types" $
       parse schemaType "" "example.seed.server.protocol.avro.PeopleResponse"
         `shouldBe` ( Right $ NamedType $ TN

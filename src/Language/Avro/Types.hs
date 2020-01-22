@@ -2,6 +2,14 @@ module Language.Avro.Types where
 
 import qualified Data.Text as T
 
+data Protocol
+  = Protocol
+      { name :: T.Text,
+        types :: [T.Text]
+        -- messages :: [T.Text]
+      }
+  deriving (Eq, Show)
+
 data Annotation
   = Namespace T.Text
   | Order T.Text
