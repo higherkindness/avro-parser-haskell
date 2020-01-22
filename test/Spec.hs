@@ -15,11 +15,19 @@ import Text.Megaparsec (parse)
 
 enumTest :: T.Text
 enumTest =
-  T.unlines
+  T.unlines -- TODO: add aliases here!
     [ "enum Kind {",
       "FOO,",
       "BAR, // the bar enum value",
       "BAZ",
+      "}"
+    ]
+
+simpleProtocol :: T.Text
+simpleProtocol =
+  T.unlines -- TODO: add namespace here!
+    [ "protocol PeopleService {",
+      "import idl \"People.avdl\";",
       "}"
     ]
 
@@ -93,3 +101,7 @@ main = hspec $ do
                          namespace = ["example", "seed", "server", "protocol", "avro"]
                        }
                    )
+  describe "Parse protocols"
+    $ it "should parse with imports"
+    $ parse parseProtocol "" simpleProtocol
+      `shouldBe` (Right $ Protocol "PeopleService" [IdlImport "People.avdl"])
