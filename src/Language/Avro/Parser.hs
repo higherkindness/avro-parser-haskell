@@ -90,8 +90,8 @@ parseProtocol =
   Protocol <$ reserved "protocol" <*> identifier
     <*> betweenBraces (many stringLiteral) -- TODO: here goes more things!
 
-parseUnion :: MonadParsec Char T.Text m => m (Vector Schema)
-parseUnion = fromList <$> betweenBraces (lexeme $ sepBy1 schemaType $ symbol ",")
+parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
+parseVector t = fromList <$> betweenBraces (lexeme $ sepBy1 t $ symbol ",")
 
 schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =
@@ -105,9 +105,8 @@ schemaType =
     <|> String <$ reserved "string"
     <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
     <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
-    <|> Union <$ reserved "union" <*> parseUnion
-    -- TODO:
-    -- <|> Record <$ reserved "record"
-    -- <|> Enum <$ reserved "enum"
-    -- <|> Fixed <$ reserved "fixed"
+    <|> Union <$ reserved "union" <*> parseVector schemaType -- TODO: parse Aliases here! 👇🏼
+    <|> Fixed <$ reserved "fixed" <*> (parseNamedType . pure <$> identifier) <*> pure [] <*> betweenParens number <* symbol ";"
+    <|> Enum <$ reserved "enum" <*> (parseNamedType . pure <$> identifier) <*> pure [] <*> pure Nothing <*> parseVector identifier
+    -- TODO: <|> Record <$ reserved "record"
     <|> NamedType . parseNamedType <$> lexeme (sepBy1 identifier $ char '.')

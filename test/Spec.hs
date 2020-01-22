@@ -67,6 +67,12 @@ main = hspec $ do
     it "should parse unions" $
       parse schemaType "" "union { string, int, null }"
         `shouldBe` (Right $ Union $ fromList [String, Int, Null])
+    it "should parse fixeds" $
+      parse schemaType "" "fixed MD5(16);"
+        `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16) -- TODO: test with aliases!
+    it "should parse enums" $
+      parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }" -- TODO: test with aliases and docs!
+        `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
       parse schemaType "" "example.seed.server.protocol.avro.PeopleResponse"
         `shouldBe` ( Right $ NamedType $ TN
