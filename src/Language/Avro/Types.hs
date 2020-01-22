@@ -5,8 +5,9 @@ import qualified Data.Text as T
 data Protocol
   = Protocol
       { name :: T.Text,
-        types :: [T.Text]
-        -- messages :: [T.Text]
+        imports :: [ImportType]
+        -- TODO: , types :: [Schema]
+        -- TODO: , services :: [ServiceDecl]
       }
   deriving (Eq, Show)
 

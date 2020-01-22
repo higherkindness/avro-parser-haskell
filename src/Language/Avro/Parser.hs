@@ -88,7 +88,7 @@ parseImport =
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
   Protocol <$ reserved "protocol" <*> identifier
-    <*> betweenBraces (many stringLiteral) -- TODO: here goes more things!
+    <*> betweenBraces (many parseImport) -- TODO: here goes more things!
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> betweenBraces (lexeme $ sepBy1 t $ symbol ",")
