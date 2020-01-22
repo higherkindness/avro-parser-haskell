@@ -5,6 +5,7 @@ module Main
   )
 where
 
+import Data.Avro.Schema
 import Language.Avro.Parser
 import Language.Avro.Types
 import Test.Hspec
@@ -38,3 +39,35 @@ main = hspec $ do
     it "should parse schema" $
       parse parseImport "" "import schema \"foo.avsc\";"
         `shouldBe` (Right $ SchemaImport "foo.avsc")
+  describe "Parse Data.Avro.Schema" $ do
+    it "should parse null" $
+      parse schemaType "" "null" `shouldBe` Right Null
+    it "should parse boolean" $
+      parse schemaType "" "boolean" `shouldBe` Right Boolean
+    it "should parse int" $
+      parse schemaType "" "int" `shouldBe` Right Int
+    it "should parse long" $
+      parse schemaType "" "long" `shouldBe` Right Long
+    it "should parse float" $
+      parse schemaType "" "float" `shouldBe` Right Float
+    it "should parse double" $
+      parse schemaType "" "double" `shouldBe` Right Double
+    it "should parse bytes" $
+      parse schemaType "" "bytes" `shouldBe` Right Bytes
+    it "should parse string" $
+      parse schemaType "" "string" `shouldBe` Right String
+    it "should parse array" $ do
+      parse schemaType "" "array<int>" `shouldBe` (Right $ Array Int)
+      parse schemaType "" "array<array<string>>"
+        `shouldBe` (Right $ Array $ Array String)
+    it "should parse map" $ do
+      parse schemaType "" "map<int>" `shouldBe` (Right $ Map Int)
+      parse schemaType "" "map<map<string>>"
+        `shouldBe` (Right $ Map $ Map String)
+    it "should parse named types" $
+      parse schemaType "" "example.seed.server.protocol.avro.PeopleResponse"
+        `shouldBe` ( Right $ NamedType $ TN
+                       { baseName = "PeopleResponse",
+                         namespace = ["example", "seed", "server", "protocol", "avro"]
+                       }
+                   )
