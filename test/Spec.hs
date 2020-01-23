@@ -15,8 +15,9 @@ import Text.Megaparsec (parse)
 
 enumTest :: T.Text
 enumTest =
-  T.unlines -- TODO: add aliases here!
-    [ "enum Kind {",
+  T.unlines
+    [ -- TODO: "@aliases([\"org.foo.KindOf\"])",
+      "enum Kind {",
       "FOO,",
       "BAR, // the bar enum value",
       "BAZ",
@@ -86,13 +87,15 @@ main = hspec $ do
     it "should parse unions" $
       parse schemaType "" "union { string, int, null }"
         `shouldBe` (Right $ Union $ fromList [String, Int, Null])
-    it "should parse fixeds" $
+    it "should parse fixeds" $ do
       parse schemaType "" "fixed MD5(16)"
-        `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16) -- TODO: test with aliases!
+        `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16)
+      parse schemaType "" "@aliases([\"org.foo.MD5\"])\nfixed MD5(16)"
+        `shouldBe` (Right $ Fixed (TN "MD5" []) ["org.foo.MD5"] 16)
     it "should parse enums" $ do
       parse schemaType "" enumTest
-        `shouldBe` (Right $ Enum (TN "Kind" []) [] Nothing (fromList ["FOO", "BAR", "BAZ"]))
-      parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }" -- TODO: test with aliases and docs!
+        `shouldBe` (Right $ Enum (TN "Kind" []) ["org.foo.KindOf"] Nothing (fromList ["FOO", "BAR", "BAZ"]))
+      parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }" -- TODO: test with docs!
         `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
       parse schemaType "" "example.seed.server.protocol.avro.PeopleResponse"

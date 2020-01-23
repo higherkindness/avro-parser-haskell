@@ -7,6 +7,7 @@ module Language.Avro.Parser where
 import Data.Avro
 import Data.Avro.Schema
 import qualified Data.Avro.Types as AT
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, fromList)
@@ -63,6 +64,9 @@ toNamedType xs = TN {baseName, namespace}
     baseName = last xs
     namespace = filter (/= "") $ init xs
 
+multiNamedTypes :: [T.Text] -> [TypeName]
+multiNamedTypes = fmap $ toNamedType . T.splitOn "."
+
 parseAnnotation :: MonadParsec Char T.Text m => m Annotation
 parseAnnotation =
   symbol "@"
@@ -73,6 +77,12 @@ parseAnnotation =
                (betweenSquares $ lexeme $ sepBy1 stringLiteral $ symbol ",")
            <|> OtherAnnotation <$> identifier <*> betweenParens stringLiteral
        )
+
+parseAliases :: MonadParsec Char T.Text m => m [TypeName]
+parseAliases =
+  multiNamedTypes <$ (symbol "@" *> reserved "aliases")
+    <*> betweenParens
+      (betweenSquares $ lexeme $ sepBy1 stringLiteral $ symbol ",")
 
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
@@ -108,8 +118,8 @@ schemaType =
     <|> String <$ reserved "string"
     <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
     <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
-    <|> Union <$ reserved "union" <*> parseVector schemaType -- TODO: parse Aliases here! 👇🏼
-    <|> Fixed <$ reserved "fixed" <*> parseTypeName <*> pure [] <*> betweenParens number
-    <|> Enum <$ reserved "enum" <*> parseTypeName <*> pure [] <*> pure Nothing <*> parseVector identifier
+    <|> Union <$ reserved "union" <*> parseVector schemaType
+    <|> flip Fixed <$> (fromMaybe [] <$> optional parseAliases) <* reserved "fixed" <*> parseTypeName <*> betweenParens number
+    <|> flip Enum <$> (fromMaybe [] <$> optional parseAliases) <* reserved "enum" <*> parseTypeName <*> pure Nothing <*> parseVector identifier
     -- TODO: <|> Record <$ reserved "record"
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
