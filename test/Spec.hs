@@ -16,7 +16,7 @@ import Text.Megaparsec (parse)
 enumTest :: T.Text
 enumTest =
   T.unlines
-    [ -- TODO: "@aliases([\"org.foo.KindOf\"])",
+    [ "@aliases([\"org.foo.KindOf\"])",
       "enum Kind {",
       "FOO,",
       "BAR, // the bar enum value",
