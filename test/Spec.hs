@@ -32,6 +32,16 @@ simpleProtocol =
       "}"
     ]
 
+simpleRecord :: T.Text
+simpleRecord =
+  T.unlines
+    [ "@aliases([\"org.foo.Person\"])",
+      "record Person {",
+      "string name;",
+      "int age;",
+      "}"
+    ]
+
 main :: IO ()
 main = hspec $ do
   describe "Parse annotations" $ do
@@ -94,7 +104,7 @@ main = hspec $ do
         `shouldBe` (Right $ Fixed (TN "MD5" []) ["org.foo.MD5"] 16)
     it "should parse enums" $ do
       parse schemaType "" enumTest
-        `shouldBe` (Right $ Enum (TN "Kind" []) ["org.foo.KindOf"] Nothing (fromList ["FOO", "BAR", "BAZ"]))
+        `shouldBe` (Right $ Enum (TN "Kind" []) [TN "KindOf" ["org", "foo"]] Nothing (fromList ["FOO", "BAR", "BAZ"]))
       parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }" -- TODO: test with docs!
         `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
@@ -103,6 +113,16 @@ main = hspec $ do
                        { baseName = "PeopleResponse",
                          namespace = ["example", "seed", "server", "protocol", "avro"]
                        }
+                   )
+    it "should parse records" $
+      parse schemaType "" simpleRecord
+        `shouldBe` ( Right $
+                       Record
+                         (TN "Person" [])
+                         [TN "Person" ["org", "foo"]]
+                         Nothing -- TODO: implement docs for records
+                         Nothing -- TODO: implement order for records
+                         [] -- TODO: parse fields of records!
                    )
   describe "Parse protocols"
     $ it "should parse with imports"
