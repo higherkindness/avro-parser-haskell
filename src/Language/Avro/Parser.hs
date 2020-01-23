@@ -106,6 +106,9 @@ parseVector t = fromList <$> betweenBraces (lexeme $ sepBy1 t $ symbol ",")
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
 
+maybeAliases :: MonadParsec Char T.Text m => m [TypeName]
+maybeAliases = fromMaybe [] <$> optional parseAliases
+
 schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =
   Null <$ reserved "null"
@@ -119,7 +122,7 @@ schemaType =
     <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
     <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
     <|> Union <$ reserved "union" <*> parseVector schemaType
-    <|> flip Fixed <$> (fromMaybe [] <$> optional parseAliases) <* reserved "fixed" <*> parseTypeName <*> betweenParens number
-    <|> flip Enum <$> (fromMaybe [] <$> optional parseAliases) <* reserved "enum" <*> parseTypeName <*> pure Nothing <*> parseVector identifier
+    <|> try (flip Fixed <$> maybeAliases <* reserved "fixed" <*> parseTypeName <*> betweenParens number)
+    <|> try (flip Enum <$> maybeAliases <* reserved "enum" <*> parseTypeName <*> pure Nothing <*> parseVector identifier)
     -- TODO: <|> Record <$ reserved "record"
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
