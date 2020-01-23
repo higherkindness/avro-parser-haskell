@@ -124,5 +124,5 @@ schemaType =
     <|> Union <$ reserved "union" <*> parseVector schemaType
     <|> try (flip Fixed <$> maybeAliases <* reserved "fixed" <*> parseTypeName <*> betweenParens number)
     <|> try (flip Enum <$> maybeAliases <* reserved "enum" <*> parseTypeName <*> pure Nothing <*> parseVector identifier)
-    -- TODO: <|> Record <$ reserved "record"
+    <|> flip Record <$> maybeAliases <* reserved "record" <*> parseTypeName <*> pure Nothing <*> pure Nothing <*> pure []
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
