@@ -56,9 +56,9 @@ ident =
 identifier :: MonadParsec Char T.Text m => m T.Text
 identifier = lexeme ident
 
-parseNamedType :: [T.Text] -> TypeName
-parseNamedType [] = error "named types cannot be empty"
-parseNamedType xs = TN {baseName, namespace}
+toNamedType :: [T.Text] -> TypeName
+toNamedType [] = error "named types cannot be empty"
+toNamedType xs = TN {baseName, namespace}
   where
     baseName = last xs
     namespace = filter (/= "") $ init xs
@@ -93,6 +93,9 @@ parseProtocol =
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> betweenBraces (lexeme $ sepBy1 t $ symbol ",")
 
+parseTypeName :: MonadParsec Char T.Text m => m TypeName
+parseTypeName = toNamedType . pure <$> identifier
+
 schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =
   Null <$ reserved "null"
@@ -106,7 +109,7 @@ schemaType =
     <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
     <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
     <|> Union <$ reserved "union" <*> parseVector schemaType -- TODO: parse Aliases here! 👇🏼
-    <|> Fixed <$ reserved "fixed" <*> (parseNamedType . pure <$> identifier) <*> pure [] <*> betweenParens number <* symbol ";"
-    <|> Enum <$ reserved "enum" <*> (parseNamedType . pure <$> identifier) <*> pure [] <*> pure Nothing <*> parseVector identifier
+    <|> Fixed <$ reserved "fixed" <*> parseTypeName <*> pure [] <*> betweenParens number
+    <|> Enum <$ reserved "enum" <*> parseTypeName <*> pure [] <*> pure Nothing <*> parseVector identifier
     -- TODO: <|> Record <$ reserved "record"
-    <|> NamedType . parseNamedType <$> lexeme (sepBy1 identifier $ char '.')
+    <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
