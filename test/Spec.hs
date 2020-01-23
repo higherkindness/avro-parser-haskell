@@ -87,7 +87,7 @@ main = hspec $ do
       parse schemaType "" "union { string, int, null }"
         `shouldBe` (Right $ Union $ fromList [String, Int, Null])
     it "should parse fixeds" $
-      parse schemaType "" "fixed MD5(16);"
+      parse schemaType "" "fixed MD5(16)"
         `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16) -- TODO: test with aliases!
     it "should parse enums" $ do
       parse schemaType "" enumTest
