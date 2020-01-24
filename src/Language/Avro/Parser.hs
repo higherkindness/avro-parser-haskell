@@ -16,39 +16,39 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
-spaceConsumer :: MonadParsec Char T.Text m => m ()
-spaceConsumer =
+spaces :: MonadParsec Char T.Text m => m ()
+spaces =
   L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
 lexeme :: MonadParsec Char T.Text m => m a -> m a
-lexeme = L.lexeme spaceConsumer
+lexeme = L.lexeme spaces
 
 symbol :: MonadParsec Char T.Text m => T.Text -> m T.Text
-symbol = L.symbol spaceConsumer
+symbol = L.symbol spaces
 
 reserved :: MonadParsec Char T.Text m => T.Text -> m T.Text
 reserved = lexeme . chunk
 
 number :: (MonadParsec Char T.Text m, Integral a) => m a
-number = L.signed spaceConsumer (lexeme L.decimal) <|> lexeme L.octal <|> lexeme L.hexadecimal
+number = L.signed spaces (lexeme L.decimal) <|> lexeme L.octal <|> lexeme L.hexadecimal
 
 floating :: (MonadParsec Char T.Text m, RealFloat a) => m a
-floating = L.signed spaceConsumer (lexeme L.float)
+floating = L.signed spaces (lexeme L.float)
 
-stringLiteral :: MonadParsec Char T.Text m => m T.Text
-stringLiteral = T.pack <$> (char '"' >> manyTill L.charLiteral (char '"'))
+strlit :: MonadParsec Char T.Text m => m T.Text
+strlit = T.pack <$> (char '"' >> manyTill L.charLiteral (char '"'))
 
-betweenBraces :: MonadParsec Char T.Text m => m a -> m a
-betweenBraces = between (symbol "{") (symbol "}")
+braces :: MonadParsec Char T.Text m => m a -> m a
+braces = between (symbol "{") (symbol "}")
 
-betweenSquares :: MonadParsec Char T.Text m => m a -> m a
-betweenSquares = between (symbol "[") (symbol "]")
+brackets :: MonadParsec Char T.Text m => m a -> m a
+brackets = between (symbol "[") (symbol "]")
 
-betweenParens :: MonadParsec Char T.Text m => m a -> m a
-betweenParens = between (symbol "(") (symbol ")")
+parens :: MonadParsec Char T.Text m => m a -> m a
+parens = between (symbol "(") (symbol ")")
 
-betweenDiamonds :: MonadParsec Char T.Text m => m a -> m a
-betweenDiamonds = between (symbol "<") (symbol ">")
+diamonds :: MonadParsec Char T.Text m => m a -> m a
+diamonds = between (symbol "<") (symbol ">")
 
 ident :: MonadParsec Char T.Text m => m T.Text
 ident =
@@ -70,15 +70,15 @@ multiNamedTypes = fmap $ toNamedType . T.splitOn "."
 parseAnnotation :: MonadParsec Char T.Text m => m Annotation
 parseAnnotation =
   symbol "@"
-    *> ( Namespace <$ reserved "namespace" <*> betweenParens stringLiteral
-           <|> OtherAnnotation <$> identifier <*> betweenParens stringLiteral
+    *> ( Namespace <$ reserved "namespace" <*> parens strlit
+           <|> OtherAnnotation <$> identifier <*> parens strlit
        )
 
 parseAliases :: MonadParsec Char T.Text m => m Aliases
 parseAliases =
   multiNamedTypes <$ (symbol "@" *> reserved "aliases")
-    <*> betweenParens
-      (betweenSquares $ lexeme $ sepBy1 stringLiteral $ symbol ",")
+    <*> parens
+      (brackets $ lexeme $ sepBy1 strlit $ symbol ",")
 
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
@@ -89,15 +89,15 @@ parseImport =
        )
   where
     impHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
-    impHelper ct t = ct <$> (reserved t *> stringLiteral <* symbol ";")
+    impHelper ct t = ct <$> (reserved t *> strlit <* symbol ";")
 
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
   Protocol <$ reserved "protocol" <*> identifier
-    <*> betweenBraces (many parseImport) -- TODO: here goes more things!
+    <*> braces (many parseImport) -- TODO: here goes more things!
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
-parseVector t = fromList <$> betweenBraces (lexeme $ sepBy1 t $ symbol ",")
+parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
 
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
@@ -106,7 +106,7 @@ maybeAliases :: MonadParsec Char T.Text m => m Aliases
 maybeAliases = fromMaybe [] <$> optional parseAliases
 
 parseOrder :: MonadParsec Char T.Text m => m Order
-parseOrder = toOrder <$ (symbol "@" *> reserved "order") <*> betweenParens stringLiteral
+parseOrder = toOrder <$ (symbol "@" *> reserved "order") <*> parens strlit
   where
     toOrder :: T.Text -> Order
     toOrder "ascending" = Ascending
@@ -123,10 +123,10 @@ schemaType =
     <|> Double <$ reserved "double"
     <|> Bytes <$ reserved "bytes"
     <|> String <$ reserved "string"
-    <|> Array <$ reserved "array" <*> betweenDiamonds schemaType
-    <|> Map <$ reserved "map" <*> betweenDiamonds schemaType
+    <|> Array <$ reserved "array" <*> diamonds schemaType
+    <|> Map <$ reserved "map" <*> diamonds schemaType
     <|> Union <$ reserved "union" <*> parseVector schemaType
-    <|> try (flip Fixed <$> maybeAliases <* reserved "fixed" <*> parseTypeName <*> betweenParens number)
+    <|> try (flip Fixed <$> maybeAliases <* reserved "fixed" <*> parseTypeName <*> parens number)
     <|> try (flip Enum <$> maybeAliases <* reserved "enum" <*> parseTypeName <*> pure Nothing <*> parseVector identifier)
     <|> flip Record <$> maybeAliases <* reserved "record" <*> parseTypeName <*> pure Nothing <*> pure Nothing <*> pure []
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
