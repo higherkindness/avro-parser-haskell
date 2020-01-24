@@ -92,8 +92,7 @@ parseImport =
 
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
-  Protocol <$ reserved "protocol"
-    <*> pure Nothing -- namespace
+  Protocol <$> optional parseNamespace <* reserved "protocol"
     <*> identifier
     <*> braces (many parseImport) -- TODO: here goes more things!
 
