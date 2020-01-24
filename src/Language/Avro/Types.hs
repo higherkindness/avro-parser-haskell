@@ -1,5 +1,6 @@
 module Language.Avro.Types where
 
+import Data.Avro.Schema
 import qualified Data.Text as T
 
 data Protocol
@@ -11,10 +12,10 @@ data Protocol
       }
   deriving (Eq, Show)
 
+type Aliases = [TypeName]
+
 data Annotation
   = Namespace T.Text
-  | Order T.Text
-  | Aliases [T.Text]
   | OtherAnnotation
       { ann :: T.Text,
         body :: T.Text

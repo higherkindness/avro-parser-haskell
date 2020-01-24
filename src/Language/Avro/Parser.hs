@@ -71,14 +71,10 @@ parseAnnotation :: MonadParsec Char T.Text m => m Annotation
 parseAnnotation =
   symbol "@"
     *> ( Namespace <$ reserved "namespace" <*> betweenParens stringLiteral
-           <|> Order <$ reserved "order" <*> betweenParens stringLiteral
-           <|> Aliases <$ reserved "aliases"
-             <*> betweenParens
-               (betweenSquares $ lexeme $ sepBy1 stringLiteral $ symbol ",")
            <|> OtherAnnotation <$> identifier <*> betweenParens stringLiteral
        )
 
-parseAliases :: MonadParsec Char T.Text m => m [TypeName]
+parseAliases :: MonadParsec Char T.Text m => m Aliases
 parseAliases =
   multiNamedTypes <$ (symbol "@" *> reserved "aliases")
     <*> betweenParens
@@ -106,8 +102,16 @@ parseVector t = fromList <$> betweenBraces (lexeme $ sepBy1 t $ symbol ",")
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
 
-maybeAliases :: MonadParsec Char T.Text m => m [TypeName]
+maybeAliases :: MonadParsec Char T.Text m => m Aliases
 maybeAliases = fromMaybe [] <$> optional parseAliases
+
+parseOrder :: MonadParsec Char T.Text m => m Order
+parseOrder = toOrder <$ (symbol "@" *> reserved "order") <*> betweenParens stringLiteral
+  where
+    toOrder :: T.Text -> Order
+    toOrder "ascending" = Ascending
+    toOrder "descending" = Descending
+    toOrder _ = Ignore
 
 schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =

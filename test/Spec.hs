@@ -48,12 +48,15 @@ main = hspec $ do
     it "should parse namespaces" $
       parse parseAnnotation "" "@namespace(\"mynamespace\")"
         `shouldBe` (Right $ Namespace "mynamespace")
-    it "should parse ordering" $
-      parse parseAnnotation "" "@order(\"ascending\")"
-        `shouldBe` (Right $ Order "ascending")
-    it "should parse aliases" $
-      parse parseAnnotation "" "@aliases([\"org.old.OldRecord\", \"org.ancient.AncientRecord\"])"
-        `shouldBe` (Right $ Aliases ["org.old.OldRecord", "org.ancient.AncientRecord"])
+    it "should parse ordering" $ do
+      parse parseOrder "" "@order(\"ascending\")" `shouldBe` Right Ascending
+      parse parseOrder "" "@order(\"descending\")" `shouldBe` Right Descending
+      parse parseOrder "" "@order(\"ignore\")" `shouldBe` Right Ignore
+    it "should parse aliases" $ do
+      parse parseAliases "" "@aliases([\"org.foo.KindOf\"])"
+        `shouldBe` Right [TN "KindOf" ["org", "foo"]]
+      parse parseAliases "" "@aliases([\"org.old.OldRecord\", \"org.ancient.AncientRecord\"])"
+        `shouldBe` Right [TN "OldRecord" ["org", "old"], TN "AncientRecord" ["org", "ancient"]]
     it "should parse other annotations" $ do
       parse parseAnnotation "" "@java-class(\"java.util.ArrayList\")"
         `shouldBe` (Right $ OtherAnnotation "java-class" "java.util.ArrayList")
