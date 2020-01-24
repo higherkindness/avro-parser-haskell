@@ -42,6 +42,20 @@ simpleRecord =
       "}"
     ]
 
+complexRecord :: T.Text
+complexRecord =
+  T.unlines
+    [ "record TestRecord {",
+      "@order(\"ignore\")",
+      "string name;",
+      "@order(\"descending\")",
+      "Kind kind;",
+      "MD5 hash;",
+      "union { MD5, null} @aliases([\"hash\"]) nullableHash;",
+      "array<long> arrayOfLongs;",
+      "}"
+    ]
+
 main :: IO ()
 main = hspec $ do
   describe "Parse annotations" $ do
@@ -119,15 +133,32 @@ main = hspec $ do
                          namespace = ["example", "seed", "server", "protocol", "avro"]
                        }
                    )
-    it "should parse records" $
+    it "should parse simple records" $
       parse schemaType "" simpleRecord
         `shouldBe` ( Right $
                        Record
                          (TN "Person" [])
                          [TN "Person" ["org", "foo"]]
                          Nothing -- docs are ignored for now...
-                         Nothing
-                         [] -- TODO: parse fields of records!
+                         Nothing -- order is ignored for now...
+                         [ Field "name" [] Nothing Nothing String Nothing,
+                           Field "age" [] Nothing Nothing Int Nothing
+                         ]
+                   )
+    it "should parse complex records" $
+      parse schemaType "" complexRecord
+        `shouldBe` ( Right $
+                       Record
+                         (TN "TestRecord" [])
+                         []
+                         Nothing -- docs are ignored for now...
+                         Nothing -- order is ignored for now...
+                         [ Field "name" [] Nothing (Just Ignore) String Nothing,
+                           Field "kind" [] Nothing (Just Descending) (NamedType "Kind") Nothing,
+                           Field "hash" [] Nothing Nothing (NamedType "MD5") Nothing,
+                           Field "nullableHash" ["hash"] Nothing Nothing (Union $ fromList [NamedType "MD5", Null]) Nothing,
+                           Field "arrayOfLongs" [] Nothing Nothing (Array Long) Nothing
+                         ]
                    )
   describe "Parse protocols" $ do
     it "should parse with imports" $

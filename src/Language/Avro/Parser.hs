@@ -73,9 +73,7 @@ parseNamespace = toNs <$ (symbol "@" *> reserved "namespace") <*> parens strlit
     toNs = Namespace . T.splitOn "."
 
 parseAliases :: MonadParsec Char T.Text m => m Aliases
-parseAliases =
-  multiNamedTypes <$ (symbol "@" *> reserved "aliases")
-    <*> parens (brackets $ lexeme $ sepBy1 strlit $ symbol ",")
+parseAliases = multiNamedTypes <$> parseFieldAlias
 
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
@@ -109,6 +107,22 @@ parseOrder =
           <|> Ignore <$ string "\"ignore\""
       )
 
+parseFieldAlias :: MonadParsec Char T.Text m => m [T.Text]
+parseFieldAlias =
+  symbol "@" *> reserved "aliases"
+    *> parens (brackets $ lexeme $ sepBy1 strlit $ symbol ",")
+
+parseField :: MonadParsec Char T.Text m => m Field
+parseField =
+  (\d o t a n df -> Field n a d o t df)
+    <$> pure Nothing -- docs are ignored for now...
+    <*> optional parseOrder
+    <*> schemaType
+    <*> option [] parseFieldAlias
+    <*> identifier
+    <*> pure Nothing -- default value is not available for now...
+    <* symbol ";"
+
 schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =
   Null <$ reserved "null"
@@ -129,16 +143,18 @@ schemaType =
           <*> parens number
       )
     <|> try
-      ( flip Enum <$> option [] parseAliases <* reserved "enum"
+      ( flip Enum
+          <$> option [] parseAliases <* reserved "enum"
           <*> parseTypeName
           <*> pure Nothing -- docs are ignored for now...
           <*> parseVector identifier
       )
     <|> try
-      ( flip Record <$> option [] parseAliases <* reserved "record"
+      ( flip Record
+          <$> option [] parseAliases <* reserved "record"
           <*> parseTypeName
           <*> pure Nothing -- docs are ignored for now...
-          <*> optional parseOrder
-          <*> pure []
+          <*> optional parseOrder -- TODO: the order of a record is not here!
+          <*> option [] (braces . many $ parseField)
       )
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
