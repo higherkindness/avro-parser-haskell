@@ -17,8 +17,7 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 
 spaces :: MonadParsec Char T.Text m => m ()
-spaces =
-  L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
+spaces = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
 
 lexeme :: MonadParsec Char T.Text m => m a -> m a
 lexeme = L.lexeme spaces
@@ -51,8 +50,7 @@ diamonds :: MonadParsec Char T.Text m => m a -> m a
 diamonds = between (symbol "<") (symbol ">")
 
 ident :: MonadParsec Char T.Text m => m T.Text
-ident =
-  (T.pack .) . (:) <$> letterChar <*> many (alphaNumChar <|> char '_' <|> char '-')
+ident = (T.pack .) . (:) <$> letterChar <*> many (alphaNumChar <|> char '_' <|> char '-')
 
 identifier :: MonadParsec Char T.Text m => m T.Text
 identifier = lexeme ident
@@ -68,17 +66,18 @@ multiNamedTypes :: [T.Text] -> [TypeName]
 multiNamedTypes = fmap $ toNamedType . T.splitOn "."
 
 parseAnnotation :: MonadParsec Char T.Text m => m Annotation
-parseAnnotation =
-  symbol "@"
-    *> ( Namespace <$ reserved "namespace" <*> parens strlit
-           <|> OtherAnnotation <$> identifier <*> parens strlit
-       )
+parseAnnotation = Annotation <$ symbol "@" <*> identifier <*> parens strlit
+
+parseNamespace :: MonadParsec Char T.Text m => m Namespace
+parseNamespace = toNs <$ (symbol "@" *> reserved "namespace") <*> parens strlit
+  where
+    toNs :: T.Text -> Namespace
+    toNs = Namespace . T.splitOn "."
 
 parseAliases :: MonadParsec Char T.Text m => m Aliases
 parseAliases =
   multiNamedTypes <$ (symbol "@" *> reserved "aliases")
-    <*> parens
-      (brackets $ lexeme $ sepBy1 strlit $ symbol ",")
+    <*> parens (brackets $ lexeme $ sepBy1 strlit $ symbol ",")
 
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
@@ -93,7 +92,9 @@ parseImport =
 
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
-  Protocol <$ reserved "protocol" <*> identifier
+  Protocol <$ reserved "protocol"
+    <*> pure Nothing -- namespace
+    <*> identifier
     <*> braces (many parseImport) -- TODO: here goes more things!
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)

@@ -5,18 +5,22 @@ import qualified Data.Text as T
 
 data Protocol
   = Protocol
-      { name :: T.Text,
+      { ns :: Maybe Namespace,
+        name :: T.Text,
         imports :: [ImportType]
         -- TODO: , types :: [Schema]
-        -- TODO: , services :: [ServiceDecl]
+        -- TODO: , messages :: [Message]
       }
+  deriving (Eq, Show)
+
+newtype Namespace
+  = Namespace [T.Text]
   deriving (Eq, Show)
 
 type Aliases = [TypeName]
 
 data Annotation
-  = Namespace T.Text
-  | OtherAnnotation
+  = Annotation
       { ann :: T.Text,
         body :: T.Text
       }

@@ -45,9 +45,11 @@ simpleRecord =
 main :: IO ()
 main = hspec $ do
   describe "Parse annotations" $ do
-    it "should parse namespaces" $
-      parse parseAnnotation "" "@namespace(\"mynamespace\")"
-        `shouldBe` (Right $ Namespace "mynamespace")
+    it "should parse namespaces" $ do
+      parse parseNamespace "" "@namespace(\"mynamespace\")"
+        `shouldBe` (Right $ Namespace ["mynamespace"])
+      parse parseNamespace "" "@namespace(\"org.apache.avro.test\")"
+        `shouldBe` (Right $ Namespace ["org", "apache", "avro", "test"])
     it "should parse ordering" $ do
       parse parseOrder "" "@order(\"ascending\")" `shouldBe` Right Ascending
       parse parseOrder "" "@order(\"descending\")" `shouldBe` Right Descending
@@ -59,9 +61,9 @@ main = hspec $ do
         `shouldBe` Right [TN "OldRecord" ["org", "old"], TN "AncientRecord" ["org", "ancient"]]
     it "should parse other annotations" $ do
       parse parseAnnotation "" "@java-class(\"java.util.ArrayList\")"
-        `shouldBe` (Right $ OtherAnnotation "java-class" "java.util.ArrayList")
+        `shouldBe` (Right $ Annotation "java-class" "java.util.ArrayList")
       parse parseAnnotation "" "@java-key-class(\"java.io.File\")"
-        `shouldBe` (Right $ OtherAnnotation "java-key-class" "java.io.File")
+        `shouldBe` (Right $ Annotation "java-key-class" "java.io.File")
   describe "Parse imports" $ do
     it "should parse idl" $
       parse parseImport "" "import idl \"foo.avdl\";"
@@ -130,4 +132,4 @@ main = hspec $ do
   describe "Parse protocols"
     $ it "should parse with imports"
     $ parse parseProtocol "" simpleProtocol
-      `shouldBe` (Right $ Protocol "PeopleService" [IdlImport "People.avdl"])
+      `shouldBe` (Right $ Protocol Nothing "PeopleService" [IdlImport "People.avdl"])
