@@ -90,51 +90,51 @@ main = hspec $ do
         `shouldBe` (Right $ SchemaImport "foo.avsc")
   describe "Parse Data.Avro.Schema" $ do
     it "should parse null" $
-      parse schemaType "" "null" `shouldBe` Right Null
+      parse parseSchema "" "null" `shouldBe` Right Null
     it "should parse boolean" $
-      parse schemaType "" "boolean" `shouldBe` Right Boolean
+      parse parseSchema "" "boolean" `shouldBe` Right Boolean
     it "should parse int" $
-      parse schemaType "" "int" `shouldBe` Right Int
+      parse parseSchema "" "int" `shouldBe` Right Int
     it "should parse long" $
-      parse schemaType "" "long" `shouldBe` Right Long
+      parse parseSchema "" "long" `shouldBe` Right Long
     it "should parse float" $
-      parse schemaType "" "float" `shouldBe` Right Float
+      parse parseSchema "" "float" `shouldBe` Right Float
     it "should parse double" $
-      parse schemaType "" "double" `shouldBe` Right Double
+      parse parseSchema "" "double" `shouldBe` Right Double
     it "should parse bytes" $
-      parse schemaType "" "bytes" `shouldBe` Right Bytes
+      parse parseSchema "" "bytes" `shouldBe` Right Bytes
     it "should parse string" $
-      parse schemaType "" "string" `shouldBe` Right String
+      parse parseSchema "" "string" `shouldBe` Right String
     it "should parse array" $ do
-      parse schemaType "" "array<int>" `shouldBe` (Right $ Array Int)
-      parse schemaType "" "array<array<string>>"
+      parse parseSchema "" "array<int>" `shouldBe` (Right $ Array Int)
+      parse parseSchema "" "array<array<string>>"
         `shouldBe` (Right $ Array $ Array String)
     it "should parse map" $ do
-      parse schemaType "" "map<int>" `shouldBe` (Right $ Map Int)
-      parse schemaType "" "map<map<string>>"
+      parse parseSchema "" "map<int>" `shouldBe` (Right $ Map Int)
+      parse parseSchema "" "map<map<string>>"
         `shouldBe` (Right $ Map $ Map String)
     it "should parse unions" $
-      parse schemaType "" "union { string, int, null }"
+      parse parseSchema "" "union { string, int, null }"
         `shouldBe` (Right $ Union $ fromList [String, Int, Null])
     it "should parse fixeds" $ do
-      parse schemaType "" "fixed MD5(16)"
+      parse parseSchema "" "fixed MD5(16)"
         `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16)
-      parse schemaType "" "@aliases([\"org.foo.MD5\"])\nfixed MD5(16)"
+      parse parseSchema "" "@aliases([\"org.foo.MD5\"])\nfixed MD5(16)"
         `shouldBe` (Right $ Fixed (TN "MD5" []) ["org.foo.MD5"] 16)
     it "should parse enums" $ do
-      parse schemaType "" enumTest
+      parse parseSchema "" enumTest
         `shouldBe` (Right $ Enum (TN "Kind" []) [TN "KindOf" ["org", "foo"]] Nothing (fromList ["FOO", "BAR", "BAZ"]))
-      parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }"
+      parse parseSchema "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }"
         `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
-      parse schemaType "" "example.seed.server.protocol.avro.PeopleResponse"
+      parse parseSchema "" "example.seed.server.protocol.avro.PeopleResponse"
         `shouldBe` ( Right $ NamedType $ TN
                        { baseName = "PeopleResponse",
                          namespace = ["example", "seed", "server", "protocol", "avro"]
                        }
                    )
     it "should parse simple records" $
-      parse schemaType "" simpleRecord
+      parse parseSchema "" simpleRecord
         `shouldBe` ( Right $
                        Record
                          (TN "Person" [])
@@ -146,7 +146,7 @@ main = hspec $ do
                          ]
                    )
     it "should parse complex records" $
-      parse schemaType "" complexRecord
+      parse parseSchema "" complexRecord
         `shouldBe` ( Right $
                        Record
                          (TN "TestRecord" [])

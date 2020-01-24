@@ -117,14 +117,14 @@ parseField =
   (\d o t a n df -> Field n a d o t df)
     <$> pure Nothing -- docs are ignored for now...
     <*> optional parseOrder
-    <*> schemaType
+    <*> parseSchema
     <*> option [] parseFieldAlias
     <*> identifier
     <*> pure Nothing -- default value is not available for now...
     <* symbol ";"
 
-schemaType :: MonadParsec Char T.Text m => m Schema
-schemaType =
+parseSchema :: MonadParsec Char T.Text m => m Schema
+parseSchema =
   Null <$ reserved "null"
     <|> Boolean <$ reserved "boolean"
     <|> Int <$ reserved "int"
@@ -133,9 +133,9 @@ schemaType =
     <|> Double <$ reserved "double"
     <|> Bytes <$ reserved "bytes"
     <|> String <$ reserved "string"
-    <|> Array <$ reserved "array" <*> diamonds schemaType
-    <|> Map <$ reserved "map" <*> diamonds schemaType
-    <|> Union <$ reserved "union" <*> parseVector schemaType
+    <|> Array <$ reserved "array" <*> diamonds parseSchema
+    <|> Map <$ reserved "map" <*> diamonds parseSchema
+    <|> Union <$ reserved "union" <*> parseVector parseSchema
     <|> try
       ( flip Fixed
           <$> option [] parseAliases <* reserved "fixed"
