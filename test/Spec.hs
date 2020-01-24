@@ -6,7 +6,7 @@ module Main
 where
 
 import Data.Avro.Schema
-import Data.Text as T
+import Data.Text as T hiding (tail)
 import Data.Vector (fromList)
 import Language.Avro.Parser
 import Language.Avro.Types
@@ -24,13 +24,13 @@ enumTest =
       "}"
     ]
 
-simpleProtocol :: T.Text
+simpleProtocol :: [T.Text]
 simpleProtocol =
-  T.unlines -- TODO: add namespace here!
-    [ "protocol PeopleService {",
-      "import idl \"People.avdl\";",
-      "}"
-    ]
+  [ "@namespace(\"example.seed.server.protocol.avro\")",
+    "protocol PeopleService {",
+    "import idl \"People.avdl\";",
+    "}"
+  ]
 
 simpleRecord :: T.Text
 simpleRecord =
@@ -129,7 +129,20 @@ main = hspec $ do
                          Nothing -- TODO: implement order for records
                          [] -- TODO: parse fields of records!
                    )
-  describe "Parse protocols"
-    $ it "should parse with imports"
-    $ parse parseProtocol "" simpleProtocol
-      `shouldBe` (Right $ Protocol Nothing "PeopleService" [IdlImport "People.avdl"])
+  describe "Parse protocols" $ do
+    it "should parse with imports" $
+      parse parseProtocol "" (T.unlines . tail $ simpleProtocol)
+        `shouldBe` ( Right $
+                       Protocol
+                         Nothing
+                         "PeopleService"
+                         [IdlImport "People.avdl"]
+                   )
+    it "should parse with namespace" $
+      parse parseProtocol "" (T.unlines simpleProtocol)
+        `shouldBe` ( Right $
+                       Protocol
+                         (Just (Namespace ["example", "seed", "server", "protocol", "avro"]))
+                         "PeopleService"
+                         [IdlImport "People.avdl"]
+                   )
