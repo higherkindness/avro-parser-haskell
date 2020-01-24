@@ -6,8 +6,6 @@ module Language.Avro.Parser where
 
 import Data.Avro
 import Data.Avro.Schema
-import qualified Data.Avro.Types as AT
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, fromList)
@@ -102,16 +100,14 @@ parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
 
-maybeAliases :: MonadParsec Char T.Text m => m Aliases
-maybeAliases = fromMaybe [] <$> optional parseAliases
-
 parseOrder :: MonadParsec Char T.Text m => m Order
-parseOrder = toOrder <$ (symbol "@" *> reserved "order") <*> parens strlit
-  where
-    toOrder :: T.Text -> Order
-    toOrder "ascending" = Ascending
-    toOrder "descending" = Descending
-    toOrder _ = Ignore
+parseOrder =
+  symbol "@" *> reserved "order"
+    *> parens
+      ( Ascending <$ string "\"ascending\""
+          <|> Descending <$ string "\"descending\""
+          <|> Ignore <$ string "\"ignore\""
+      )
 
 schemaType :: MonadParsec Char T.Text m => m Schema
 schemaType =
@@ -126,7 +122,23 @@ schemaType =
     <|> Array <$ reserved "array" <*> diamonds schemaType
     <|> Map <$ reserved "map" <*> diamonds schemaType
     <|> Union <$ reserved "union" <*> parseVector schemaType
-    <|> try (flip Fixed <$> maybeAliases <* reserved "fixed" <*> parseTypeName <*> parens number)
-    <|> try (flip Enum <$> maybeAliases <* reserved "enum" <*> parseTypeName <*> pure Nothing <*> parseVector identifier)
-    <|> flip Record <$> maybeAliases <* reserved "record" <*> parseTypeName <*> pure Nothing <*> pure Nothing <*> pure []
+    <|> try
+      ( flip Fixed
+          <$> option [] parseAliases <* reserved "fixed"
+          <*> parseTypeName
+          <*> parens number
+      )
+    <|> try
+      ( flip Enum <$> option [] parseAliases <* reserved "enum"
+          <*> parseTypeName
+          <*> pure Nothing -- docs are ignored for now...
+          <*> parseVector identifier
+      )
+    <|> try
+      ( flip Record <$> option [] parseAliases <* reserved "record"
+          <*> parseTypeName
+          <*> pure Nothing -- docs are ignored for now...
+          <*> optional parseOrder
+          <*> pure []
+      )
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')

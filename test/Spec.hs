@@ -110,7 +110,7 @@ main = hspec $ do
     it "should parse enums" $ do
       parse schemaType "" enumTest
         `shouldBe` (Right $ Enum (TN "Kind" []) [TN "KindOf" ["org", "foo"]] Nothing (fromList ["FOO", "BAR", "BAZ"]))
-      parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }" -- TODO: test with docs!
+      parse schemaType "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }"
         `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
       parse schemaType "" "example.seed.server.protocol.avro.PeopleResponse"
@@ -125,8 +125,8 @@ main = hspec $ do
                        Record
                          (TN "Person" [])
                          [TN "Person" ["org", "foo"]]
-                         Nothing -- TODO: implement docs for records
-                         Nothing -- TODO: implement order for records
+                         Nothing -- docs are ignored for now...
+                         Nothing
                          [] -- TODO: parse fields of records!
                    )
   describe "Parse protocols" $ do
