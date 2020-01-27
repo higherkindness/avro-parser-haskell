@@ -114,18 +114,26 @@ parseFieldAlias =
 
 parseField :: MonadParsec Char T.Text m => m Field
 parseField =
-  (\d o t a n df -> Field n a d o t df)
-    <$> pure Nothing -- docs are ignored for now...
-    <*> optional parseOrder
+  (\o t a n -> Field n a Nothing o t Nothing) -- ignore docs and default values for now...
+    <$> optional parseOrder
     <*> parseSchema
     <*> option [] parseFieldAlias
     <*> identifier
-    <*> pure Nothing -- default value is not available for now...
+    <* symbol ";"
+
+parseMethod :: MonadParsec Char T.Text m => m Method
+parseMethod =
+  (\r n a t o -> Method n a r t o)
+    <$> parseSchema
+    <*> identifier
+    <*> parens (option [] (lexeme $ sepBy1 (parseSchema <* identifier) $ symbol ",")) -- TODO: preserve name of arguments
+    <*> option Null (reserved "throws" *> parseSchema)
+    <*> option False (True <$ reserved "oneway")
     <* symbol ";"
 
 parseSchema :: MonadParsec Char T.Text m => m Schema
 parseSchema =
-  Null <$ reserved "null"
+  Null <$ (reserved "null" <|> reserved "void")
     <|> Boolean <$ reserved "boolean"
     <|> Int <$ reserved "int"
     <|> Long <$ reserved "long"

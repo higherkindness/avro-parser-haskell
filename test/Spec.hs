@@ -177,3 +177,13 @@ main = hspec $ do
                          "PeopleService"
                          [IdlImport "People.avdl"]
                    )
+  describe "Parse services" $ do
+    it "should parse simple messages" $
+      parse parseMethod "" "int add(int arg1, int arg2);"
+        `shouldBe` (Right $ Method "add" [Int, Int] Int Null False)
+    it "should parse throwing messages" $
+      parse parseMethod "" "void error() throws TestError;" -- TODO: http://avro.apache.org/docs/1.8.2/idl.html#minutiae_escaping
+        `shouldBe` (Right $ Method "error" [] Null (NamedType $ TN "TestError" []) False)
+    it "should parse oneway messages" $
+      parse parseMethod "" "void ping() oneway;"
+        `shouldBe` (Right $ Method "ping" [] Null Null True)
