@@ -6,10 +6,10 @@ import qualified Data.Text as T
 data Protocol
   = Protocol
       { ns :: Maybe Namespace,
-        name :: T.Text,
+        pname :: T.Text,
         imports :: [ImportType]
         -- TODO: , types :: [Schema]
-        -- TODO: , messages :: [Message]
+        -- TODO: , messages :: [Method]
       }
   deriving (Eq, Show)
 
@@ -30,4 +30,14 @@ data ImportType
   = IdlImport T.Text
   | ProtocolImport T.Text
   | SchemaImport T.Text
+  deriving (Eq, Show)
+
+data Method
+  = Method
+      { mname :: T.Text,
+        args :: [Schema],
+        result :: Schema,
+        throws :: Schema,
+        oneway :: Bool
+      }
   deriving (Eq, Show)
