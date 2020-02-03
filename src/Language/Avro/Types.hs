@@ -1,4 +1,6 @@
-module Language.Avro.Types where
+module Language.Avro.Types (
+  module Language.Avro.Types, Schema (..)
+) where
 
 import Data.Avro.Schema
 import qualified Data.Text as T
@@ -7,9 +9,9 @@ data Protocol
   = Protocol
       { ns :: Maybe Namespace,
         pname :: T.Text,
-        imports :: [ImportType]
-        -- TODO: , types :: [Schema]
-        -- TODO: , messages :: [Method]
+        imports :: [ImportType],
+        types :: [Schema],
+        messages :: [Method]
       }
   deriving (Eq, Show)
 
