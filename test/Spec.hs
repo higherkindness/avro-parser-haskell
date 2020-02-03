@@ -179,9 +179,19 @@ main = hspec $ do
                    )
   describe "Parse services" $ do
     it "should parse simple messages" $
+      parse parseMethod "" "string hello(string greeting);"
+        `shouldBe` (Right $ Method "hello" [Argument String "greeting"] String Null False)
+    it "should parse more simple messages" $
+      parse parseMethod "" "bytes echoBytes(bytes data);"
+        `shouldBe` (Right $ Method "echoBytes" [Argument Bytes "data"] Bytes Null False)
+    it "should parse custom type messages" $
+      let custom = NamedType "TestRecord" in
+        parse parseMethod "" "TestRecord echo(TestRecord `record`);"
+          `shouldBe` (Right $ Method "echo" [Argument custom "record"] custom Null False)
+    it "should parse multiple argument messages" $
       parse parseMethod "" "int add(int arg1, int arg2);"
         `shouldBe` (Right $ Method "add" [Argument Int "arg1", Argument Int "arg2"] Int Null False)
-    it "should parse throwing messages" $
+    it "should parse escaped and throwing messages" $
       parse parseMethod "" "void `error`() throws TestError;"
         `shouldBe` (Right $ Method "error" [] Null (NamedType $ TN "TestError" []) False)
     it "should parse oneway messages" $
