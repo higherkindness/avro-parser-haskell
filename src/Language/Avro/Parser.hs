@@ -91,9 +91,29 @@ parseImport =
 
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
-  Protocol <$> optional parseNamespace <* reserved "protocol"
+  buildProtocol <$> optional parseNamespace <* reserved "protocol"
     <*> identifier
-    <*> braces (many parseImport) -- TODO: here goes more things!
+    <*> braces (many serviceThing)
+  where
+    buildProtocol :: Maybe Namespace -> T.Text -> [ProtocolThing] -> Protocol
+    buildProtocol ns name things =
+      Protocol
+        ns
+        name
+        [i | ProtocolThingImport i <- things]
+        [t | ProtocolThingType t <- things]
+        [m | ProtocolThingMethod m <- things]
+
+data ProtocolThing
+  = ProtocolThingImport ImportType
+  | ProtocolThingType Schema
+  | ProtocolThingMethod Method
+
+serviceThing :: MonadParsec Char T.Text m => m ProtocolThing
+serviceThing =
+  ProtocolThingImport <$> parseImport
+  <|> ProtocolThingType <$> parseSchema
+  <|> ProtocolThingMethod <$> parseMethod
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")

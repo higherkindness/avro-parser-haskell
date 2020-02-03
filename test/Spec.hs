@@ -168,6 +168,8 @@ main = hspec $ do
                          Nothing
                          "PeopleService"
                          [IdlImport "People.avdl"]
+                         []
+                         []
                    )
     it "should parse with namespace" $
       parse parseProtocol "" (T.unlines simpleProtocol)
@@ -176,6 +178,8 @@ main = hspec $ do
                          (Just (Namespace ["example", "seed", "server", "protocol", "avro"]))
                          "PeopleService"
                          [IdlImport "People.avdl"]
+                         []
+                         []
                    )
   describe "Parse services" $ do
     it "should parse simple messages" $
