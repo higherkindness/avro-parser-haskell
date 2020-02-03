@@ -47,11 +47,14 @@ parens = between (symbol "(") (symbol ")")
 diamonds :: MonadParsec Char T.Text m => m a -> m a
 diamonds = between (symbol "<") (symbol ">")
 
+backticks :: MonadParsec Char T.Text m => m T.Text
+backticks = T.pack <$> (char '`' >> manyTill L.charLiteral (char '`'))
+
 ident :: MonadParsec Char T.Text m => m T.Text
-ident = (T.pack .) . (:) <$> letterChar <*> many (alphaNumChar <|> char '_' <|> char '-')
+ident = T.pack <$> ((:) <$> letterChar <*> many (alphaNumChar <|> char '_' <|> char '-'))
 
 identifier :: MonadParsec Char T.Text m => m T.Text
-identifier = lexeme ident
+identifier = lexeme (ident <|> backticks)
 
 toNamedType :: [T.Text] -> TypeName
 toNamedType [] = error "named types cannot be empty"
@@ -121,12 +124,15 @@ parseField =
     <*> identifier
     <* symbol ";"
 
+parseArgument :: MonadParsec Char T.Text m => m Argument
+parseArgument = Argument <$> parseSchema <*> identifier
+
 parseMethod :: MonadParsec Char T.Text m => m Method
 parseMethod =
   (\r n a t o -> Method n a r t o)
     <$> parseSchema
     <*> identifier
-    <*> parens (option [] (lexeme $ sepBy1 (parseSchema <* identifier) $ symbol ",")) -- TODO: preserve name of arguments
+    <*> parens (option [] (lexeme $ sepBy1 parseArgument $ symbol ","))
     <*> option Null (reserved "throws" *> parseSchema)
     <*> option False (True <$ reserved "oneway")
     <* symbol ";"

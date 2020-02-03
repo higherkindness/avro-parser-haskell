@@ -32,10 +32,17 @@ data ImportType
   | SchemaImport T.Text
   deriving (Eq, Show)
 
+data Argument
+  = Argument
+      { atype :: Schema,
+        aname :: T.Text
+      }
+  deriving (Eq, Show)
+
 data Method
   = Method
       { mname :: T.Text,
-        args :: [Schema],
+        args :: [Argument],
         result :: Schema,
         throws :: Schema,
         oneway :: Bool
