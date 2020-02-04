@@ -188,7 +188,7 @@ parseSchema =
       )
     <|> try
       ( flip Record
-          <$> option [] parseAliases <* reserved "record"
+          <$> option [] parseAliases <* (reserved "record" <|> reserved "error")
           <*> parseTypeName
           <*> pure Nothing -- docs are ignored for now...
           <*> optional parseOrder -- TODO: order for records is not supported yet.
