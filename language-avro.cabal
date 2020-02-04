@@ -2,7 +2,7 @@ name:                language-avro
 version:             0.1.0.0
 synopsis:            Language definition and parser for AVRO files.
 description:         Parser for the AVRO language specification, see README.md for more details.
-homepage:            https://github.com/githubuser/avro-parser-haskell#readme
+homepage:            https://github.com/kutyel/avro-parser-haskell#readme
 license:             Apache-2.0
 license-file:        LICENSE
 author:              Flavio Corpa
