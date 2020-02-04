@@ -1,4 +1,4 @@
-name:                avro-parser-haskell
+name:                language-avro
 version:             0.1.0.0
 synopsis:            Language definition and parser for AVRO files.
 description:         See README.md for more details.
@@ -18,6 +18,7 @@ library
                        Language.Avro.Parser
   build-depends:       base >=4.12 && <5
                      , avro
+                     , filepath
                      , megaparsec
                      , text
                      , vector
@@ -37,7 +38,7 @@ test-suite avro-parser-haskell-test
   build-depends:
       base >=4.12 && <5
     , avro
-    , avro-parser-haskell
+    , language-avro
     , megaparsec
     , text
     , hspec
