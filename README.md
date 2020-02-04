@@ -123,4 +123,4 @@ main = readWithImports "test" "PeopleService.avdl"
 --   })
 ```
 
-⚠️ Warning: `readWithImports` only works right know if the import type is `"idl"`!
+⚠️ Warning: `readWithImports` only works right now if the import type is `"idl"`!

@@ -2,7 +2,20 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Language.Avro.Parser where
+-- | Parser for AVRO (@.avdl@) files, as defined in <http://avro.apache.org/docs/1.8.2/spec.html>.
+module Language.Avro.Parser (
+  -- * Main parsers
+    parseProtocol
+  , readWithImports
+  -- * Intermediate parsers
+  , parseAliases
+  , parseAnnotation
+  , parseImport
+  , parseMethod
+  , parseNamespace
+  , parseOrder
+  , parseSchema
+  ) where
 
 import Data.Avro
 import Data.Avro.Schema
@@ -69,18 +82,22 @@ toNamedType xs = TN {baseName, namespace}
 multiNamedTypes :: [T.Text] -> [TypeName]
 multiNamedTypes = fmap $ toNamedType . T.splitOn "."
 
+-- | Parses annotations into the @Annotation@ structure.
 parseAnnotation :: MonadParsec Char T.Text m => m Annotation
 parseAnnotation = Annotation <$ symbol "@" <*> identifier <*> parens strlit
 
+-- | Parses a single import into the @ImportType@ structure.
 parseNamespace :: MonadParsec Char T.Text m => m Namespace
 parseNamespace = toNs <$ (symbol "@" *> reserved "namespace") <*> parens strlit
   where
     toNs :: T.Text -> Namespace
     toNs = Namespace . T.splitOn "."
 
+-- | Parses aliases, which are just Lists of @TypeName@.
 parseAliases :: MonadParsec Char T.Text m => m Aliases
 parseAliases = multiNamedTypes <$> parseFieldAlias
 
+-- | Parses a single import into the @ImportType@ structure.
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
   reserved "import"
@@ -92,6 +109,7 @@ parseImport =
     impHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
     impHelper ct t = ct <$> (reserved t *> strlit <* symbol ";")
 
+-- | Parses a single protocol into the @Protocol@ structure.
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
   buildProtocol <$ spaces <*> optional parseNamespace <* reserved "protocol"
@@ -124,6 +142,7 @@ parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
 
+-- | Parses order annotations into the @Order@ structure.
 parseOrder :: MonadParsec Char T.Text m => m Order
 parseOrder =
   symbol "@" *> reserved "order"
@@ -140,16 +159,18 @@ parseFieldAlias =
 
 parseField :: MonadParsec Char T.Text m => m Field
 parseField =
-  (\o t a n -> Field n a Nothing o t Nothing) -- ignore docs and default values for now...
+  (\o t a n -> Field n a Nothing o t Nothing) -- FIXME: docs and default values are not supported yet.
     <$> optional parseOrder
     <*> parseSchema
     <*> option [] parseFieldAlias
     <*> identifier
     <* symbol ";"
 
+-- | Parses arguments of methods into the @Argument@ structure.
 parseArgument :: MonadParsec Char T.Text m => m Argument
 parseArgument = Argument <$> parseSchema <*> identifier
 
+-- | Parses a single method/message into the @Method@ structure.
 parseMethod :: MonadParsec Char T.Text m => m Method
 parseMethod =
   (\r n a t o -> Method n a r t o)
@@ -160,6 +181,7 @@ parseMethod =
     <*> option False (True <$ reserved "oneway")
     <* symbol ";"
 
+-- | Parses a single type respecting `Data.Avro.Schema`'s @Schema@.
 parseSchema :: MonadParsec Char T.Text m => m Schema
 parseSchema =
   Null <$ (reserved "null" <|> reserved "void")
@@ -191,7 +213,7 @@ parseSchema =
           <$> option [] parseAliases <* (reserved "record" <|> reserved "error")
           <*> parseTypeName
           <*> pure Nothing -- docs are ignored for now...
-          <*> optional parseOrder -- TODO: order for records is not supported yet.
+          <*> optional parseOrder -- FIXME: order for records is not supported yet.
           <*> option [] (braces . many $ parseField)
       )
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
@@ -199,7 +221,10 @@ parseSchema =
 parseFile :: Parsec e T.Text a -> String -> IO (Either (ParseErrorBundle T.Text e) a)
 parseFile p file = runParser p file <$> T.readFile file
 
-readWithImports :: FilePath -> FilePath -> IO (Either (ParseErrorBundle T.Text Char) Protocol)
+-- | Reads and parses a whole file and its imports, recursively.
+readWithImports :: FilePath -- ^ base directory
+                -> FilePath -- ^ initial file
+                -> IO (Either (ParseErrorBundle T.Text Char) Protocol)
 readWithImports baseDir initialFile = do
   initial <- parseFile parseProtocol (baseDir </> initialFile)
   case initial of
@@ -207,6 +232,6 @@ readWithImports baseDir initialFile = do
     Right p -> do
       let imps = [i | IdlImport i <- imports p]
       (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir . T.unpack) imps
-      case lefts of
-        e:_ -> pure $ Left e
-        _ -> pure $ Right $ foldl' (<>) p rights
+      pure $ case lefts of
+        e:_ -> Left e
+        _ -> Right $ foldl' (<>) p rights
