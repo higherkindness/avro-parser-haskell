@@ -29,7 +29,7 @@ simpleProtocol =
   [ "@namespace(\"example.seed.server.protocol.avro\")",
     "protocol PeopleService {",
     "import idl \"People.avdl\";",
-    -- TODO: "example.seed.server.protocol.avro.PeopleResponse getPerson(example.seed.server.protocol.avro.PeopleRequest request);",
+    "example.seed.server.protocol.avro.PeopleResponse getPerson(example.seed.server.protocol.avro.PeopleRequest request);",
     "}"
   ]
 
@@ -162,6 +162,13 @@ main = hspec $ do
                          ]
                    )
   describe "Parse protocols" $ do
+    let getPerson =
+          Method
+            "getPerson"
+            [Argument (NamedType "example.seed.server.protocol.avro.PeopleRequest") "request"]
+            (NamedType "example.seed.server.protocol.avro.PeopleResponse")
+            Null
+            False
     it "should parse with imports" $
       parse parseProtocol "" (T.unlines . tail $ simpleProtocol)
         `shouldBe` ( Right $
@@ -170,7 +177,7 @@ main = hspec $ do
                          "PeopleService"
                          [IdlImport "People.avdl"]
                          []
-                         []
+                         [getPerson]
                    )
     it "should parse with namespace" $
       parse parseProtocol "" (T.unlines simpleProtocol)
@@ -180,7 +187,7 @@ main = hspec $ do
                          "PeopleService"
                          [IdlImport "People.avdl"]
                          []
-                         []
+                         [getPerson]
                    )
   describe "Parse services" $ do
     it "should parse simple messages" $
