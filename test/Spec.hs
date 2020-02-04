@@ -29,6 +29,7 @@ simpleProtocol =
   [ "@namespace(\"example.seed.server.protocol.avro\")",
     "protocol PeopleService {",
     "import idl \"People.avdl\";",
+    -- TODO: "example.seed.server.protocol.avro.PeopleResponse getPerson(example.seed.server.protocol.avro.PeopleRequest request);",
     "}"
   ]
 

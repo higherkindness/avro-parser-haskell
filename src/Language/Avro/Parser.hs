@@ -6,6 +6,8 @@ module Language.Avro.Parser where
 
 import Data.Avro
 import Data.Avro.Schema
+import Data.Either (partitionEithers)
+import Data.List (foldl')
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, fromList)
@@ -13,6 +15,7 @@ import Language.Avro.Types
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import System.FilePath
 
 spaces :: MonadParsec Char T.Text m => m ()
 spaces = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
@@ -91,7 +94,7 @@ parseImport =
 
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
-  buildProtocol <$> optional parseNamespace <* reserved "protocol"
+  buildProtocol <$ spaces <*> optional parseNamespace <* reserved "protocol"
     <*> identifier
     <*> braces (many serviceThing)
   where
@@ -111,9 +114,9 @@ data ProtocolThing
 
 serviceThing :: MonadParsec Char T.Text m => m ProtocolThing
 serviceThing =
-  ProtocolThingImport <$> parseImport
+  try (ProtocolThingImport <$> parseImport)
+  <|> try (ProtocolThingMethod <$> parseMethod)
   <|> ProtocolThingType <$> parseSchema
-  <|> ProtocolThingMethod <$> parseMethod
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
@@ -188,7 +191,22 @@ parseSchema =
           <$> option [] parseAliases <* reserved "record"
           <*> parseTypeName
           <*> pure Nothing -- docs are ignored for now...
-          <*> optional parseOrder -- TODO: the order of a record is not here!
+          <*> optional parseOrder -- TODO: order for records is not supported yet.
           <*> option [] (braces . many $ parseField)
       )
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
+
+parseFile :: Parsec e T.Text a -> String -> IO (Either (ParseErrorBundle T.Text e) a)
+parseFile p file = runParser p file <$> T.readFile file
+
+readWithImports :: FilePath -> FilePath -> IO (Either (ParseErrorBundle T.Text Char) Protocol)
+readWithImports baseDir initialFile = do
+  initial <- parseFile parseProtocol (baseDir </> initialFile)
+  case initial of
+    Left e -> pure $ Left e
+    Right p -> do
+      let imps = [i | IdlImport i <- imports p]
+      (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir . T.unpack) imps
+      case lefts of
+        e:_ -> pure $ Left e
+        _ -> pure $ Right $ foldl' (<>) p rights

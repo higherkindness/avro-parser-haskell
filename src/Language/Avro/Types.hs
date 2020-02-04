@@ -15,6 +15,15 @@ data Protocol
       }
   deriving (Eq, Show)
 
+instance Semigroup Protocol where
+  p1 <> p2 =
+    Protocol
+      (ns p1)
+      (pname p1)
+      (imports p1 <> imports p2)
+      (types p1 <> types p2)
+      (messages p1 <> messages p2)
+
 newtype Namespace
   = Namespace [T.Text]
   deriving (Eq, Show)
