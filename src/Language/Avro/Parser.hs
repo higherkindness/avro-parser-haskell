@@ -82,22 +82,22 @@ toNamedType xs = TN {baseName, namespace}
 multiNamedTypes :: [T.Text] -> [TypeName]
 multiNamedTypes = fmap $ toNamedType . T.splitOn "."
 
--- | Parses annotations into the @Annotation@ structure.
+-- | Parses annotations into the 'Annotation' structure.
 parseAnnotation :: MonadParsec Char T.Text m => m Annotation
 parseAnnotation = Annotation <$ symbol "@" <*> identifier <*> parens strlit
 
--- | Parses a single import into the @ImportType@ structure.
+-- | Parses a single import into the 'ImportType' structure.
 parseNamespace :: MonadParsec Char T.Text m => m Namespace
 parseNamespace = toNs <$ (symbol "@" *> reserved "namespace") <*> parens strlit
   where
     toNs :: T.Text -> Namespace
     toNs = Namespace . T.splitOn "."
 
--- | Parses aliases, which are just Lists of @TypeName@.
+-- | Parses aliases, which are just Lists of 'TypeName'.
 parseAliases :: MonadParsec Char T.Text m => m Aliases
 parseAliases = multiNamedTypes <$> parseFieldAlias
 
--- | Parses a single import into the @ImportType@ structure.
+-- | Parses a single import into the 'ImportType' structure.
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
   reserved "import"
@@ -109,7 +109,7 @@ parseImport =
     impHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
     impHelper ct t = ct <$> (reserved t *> strlit <* symbol ";")
 
--- | Parses a single protocol into the @Protocol@ structure.
+-- | Parses a single protocol into the 'Protocol' structure.
 parseProtocol :: MonadParsec Char T.Text m => m Protocol
 parseProtocol =
   buildProtocol <$ spaces <*> optional parseNamespace <* reserved "protocol"
@@ -142,7 +142,7 @@ parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
 
--- | Parses order annotations into the @Order@ structure.
+-- | Parses order annotations into the 'Order' structure.
 parseOrder :: MonadParsec Char T.Text m => m Order
 parseOrder =
   symbol "@" *> reserved "order"
@@ -166,11 +166,11 @@ parseField =
     <*> identifier
     <* symbol ";"
 
--- | Parses arguments of methods into the @Argument@ structure.
+-- | Parses arguments of methods into the 'Argument' structure.
 parseArgument :: MonadParsec Char T.Text m => m Argument
 parseArgument = Argument <$> parseSchema <*> identifier
 
--- | Parses a single method/message into the @Method@ structure.
+-- | Parses a single method/message into the 'Method' structure.
 parseMethod :: MonadParsec Char T.Text m => m Method
 parseMethod =
   (\r n a t o -> Method n a r t o)
@@ -181,7 +181,7 @@ parseMethod =
     <*> option False (True <$ reserved "oneway")
     <* symbol ";"
 
--- | Parses a single type respecting `Data.Avro.Schema`'s @Schema@.
+-- | Parses a single type respecting @Data.Avro.Schema@'s 'Schema'.
 parseSchema :: MonadParsec Char T.Text m => m Schema
 parseSchema =
   Null <$ (reserved "null" <|> reserved "void")

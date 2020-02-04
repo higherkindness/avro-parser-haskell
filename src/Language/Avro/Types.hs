@@ -42,14 +42,14 @@ data Annotation
       }
   deriving (Eq, Show)
 
--- | Type for the possible import types in @Protocol@.
+-- | Type for the possible import types in 'Protocol'.
 data ImportType
   = IdlImport T.Text
   | ProtocolImport T.Text
   | SchemaImport T.Text
   deriving (Eq, Show)
 
--- | Helper type for the arguments of @Method@.
+-- | Helper type for the arguments of 'Method'.
 data Argument
   = Argument
       { atype :: Schema,
