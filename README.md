@@ -10,119 +10,133 @@ Language definition and parser for AVRO (`.avdl`) files.
 ## Example
 
 ```haskell
-#! /usr/bin/env runhaskell
+#!/usr/bin/env stack
+-- stack --resolver lts-14.23 script --package language-avro,megaparsec
 
 module Main where
 
 import Language.Avro.Parser (readWithImports)
+import Text.Megaparsec.Error (ShowErrorComponent (..), errorBundlePretty)
+
+instance ShowErrorComponent Char where
+  showErrorComponent = show
 
 main :: IO ()
-main = readWithImports "test" "PeopleService.avdl"
+main =
+  readWithImports "test" "PeopleService.avdl"
+    >>= either (putStrLn . errorBundlePretty) print
 -- λ>
--- Right
---   (Protocol {
---     ns = Just (Namespace ["example","seed","server","protocol","avro"]),
---     pname = "PeopleService", imports = [IdlImport "People.avdl"],
---     types = [
---       Record {
---         name = "Person",
---         aliases = [],
---         doc = Nothing,
---         order = Nothing,
---         fields = [
---           Field {
---             fldName = "name",
---             fldAliases = [],
---             fldDoc = Nothing,
---             fldOrder = Nothing,
---             fldType = String,
---             fldDefault = Nothing
---           },
---           Field {
---             fldName = "age",
---             fldAliases = [],
---             fldDoc = Nothing,
---             fldOrder = Nothing,
---             fldType = Int,
---             fldDefault = Nothing
---           }
---         ]
---       },
---       Record {
---         name = "NotFoundError",
---         aliases = [],
---         doc = Nothing,
---         order = Nothing,
---         fields = [
---           Field {
---             fldName = "message",
---             fldAliases = [],
---             fldDoc = Nothing,
---             fldOrder = Nothing,
---             fldType = String,
---             fldDefault = Nothing
---           }
---         ]
---       },
---       Record {
---         name = "DuplicatedPersonError",
---         aliases = [],
---         doc = Nothing,
---         order = Nothing,
---         fields = [
---           Field {
---             fldName = "message",
---             fldAliases = [],
---             fldDoc = Nothing,
---             fldOrder = Nothing,
---             fldType = String,
---             fldDefault = Nothing
---           }
---         ]
---       },
---       Record {
---         name = "PeopleRequest",
---         aliases = [],
---         doc = Nothing,
---         order = Nothing,
---         fields = [
---           Field {
---             fldName = "name",
---             fldAliases = [],
---             fldDoc = Nothing,
---             fldOrder = Nothing,
---             fldType = String,
---             fldDefault = Nothing
---           }
---         ]
---       },
---       Record {
---         name = "PeopleResponse",
---         aliases = [],
---         doc = Nothing,
---         order = Nothing,
---         fields = [
---           Field {
---             fldName = "result",
---             fldAliases = [],
---             fldDoc = Nothing,
---             fldOrder = Nothing,
---             fldType = Union {options = [NamedType "Person",NamedType "NotFoundError",NamedType "DuplicatedPersonError"]},
---             fldDefault = Nothing
---           }
---         ]
---       }
---     ],
---     messages = [
---       Method {
---         mname = "getPerson",
---         args = [Argument {atype = NamedType "example.seed.server.protocol.avro.PeopleRequest", aname = "request"}],
---         result = NamedType "example.seed.server.protocol.avro.PeopleResponse",
---         throws = Null,
---         oneway = False
---       }
---     ]
---   })
+-- Protocol {
+--   ns = Just (Namespace ["example","seed","server","protocol","avro"]),
+--   pname = "PeopleService", imports = [IdlImport "People.avdl"],
+--   types = [
+--     Record {
+--       name = "Person",
+--       aliases = [],
+--       doc = Nothing,
+--       order = Nothing,
+--       fields = [
+--         Field {
+--           fldName = "name",
+--           fldAliases = [],
+--           fldDoc = Nothing,
+--           fldOrder = Nothing,
+--           fldType = String,
+--           fldDefault = Nothing
+--         },
+--         Field {
+--           fldName = "age",
+--           fldAliases = [],
+--           fldDoc = Nothing,
+--           fldOrder = Nothing,
+--           fldType = Int,
+--           fldDefault = Nothing
+--         }
+--       ]
+--     },
+--     Record {
+--       name = "NotFoundError",
+--       aliases = [],
+--       doc = Nothing,
+--       order = Nothing,
+--       fields = [
+--         Field {
+--           fldName = "message",
+--           fldAliases = [],
+--           fldDoc = Nothing,
+--           fldOrder = Nothing,
+--           fldType = String,
+--           fldDefault = Nothing
+--         }
+--       ]
+--     },
+--     Record {
+--       name = "DuplicatedPersonError",
+--       aliases = [],
+--       doc = Nothing,
+--       order = Nothing,
+--       fields = [
+--         Field {
+--           fldName = "message",
+--           fldAliases = [],
+--           fldDoc = Nothing,
+--           fldOrder = Nothing,
+--           fldType = String,
+--           fldDefault = Nothing
+--         }
+--       ]
+--     },
+--     Record {
+--       name = "PeopleRequest",
+--       aliases = [],
+--       doc = Nothing,
+--       order = Nothing,
+--       fields = [
+--         Field {
+--           fldName = "name",
+--           fldAliases = [],
+--           fldDoc = Nothing,
+--           fldOrder = Nothing,
+--           fldType = String,
+--           fldDefault = Nothing
+--         }
+--       ]
+--     },
+--     Record {
+--       name = "PeopleResponse",
+--       aliases = [],
+--       doc = Nothing,
+--       order = Nothing,
+--       fields = [
+--         Field {
+--           fldName = "result",
+--           fldAliases = [],
+--           fldDoc = Nothing,
+--           fldOrder = Nothing,
+--           fldType = Union {options = [
+--             NamedType "Person",
+--             NamedType "NotFoundError",
+--             NamedType "DuplicatedPersonError"
+--           ]},
+--           fldDefault = Nothing
+--         }
+--       ]
+--     }
+--   ],
+--   messages = [
+--     Method {
+--       mname = "getPerson",
+--       args = [
+--         Argument {
+--           atype = NamedType "example.seed.server.protocol.avro.PeopleRequest",
+--           aname = "request"
+--       }],
+--       result = NamedType "example.seed.server.protocol.avro.PeopleResponse",
+--       throws = Null,
+--       oneway = False
+--     }
+--   ]
+-- }
 ```
 
 ⚠️ Warning: `readWithImports` only works right now if the import type is `"idl"`!
