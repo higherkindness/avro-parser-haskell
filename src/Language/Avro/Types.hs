@@ -1,8 +1,10 @@
 -- | Language definition for AVRO (@.avdl@) files,
 --   as defined in <http://avro.apache.org/docs/1.8.2/spec.html>.
-module Language.Avro.Types (
-  module Language.Avro.Types, Schema (..)
-) where
+module Language.Avro.Types
+  ( module Language.Avro.Types,
+    Schema (..),
+  )
+where
 
 import Data.Avro.Schema
 import qualified Data.Text as T
