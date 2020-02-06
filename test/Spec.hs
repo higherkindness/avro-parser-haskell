@@ -129,10 +129,11 @@ main = hspec $ do
         `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
     it "should parse named types" $
       parse parseSchema "" "example.seed.server.protocol.avro.PeopleResponse"
-        `shouldBe` ( Right $ NamedType $ TN
-                       { baseName = "PeopleResponse",
-                         namespace = ["example", "seed", "server", "protocol", "avro"]
-                       }
+        `shouldBe` ( Right $ NamedType $
+                       TN
+                         { baseName = "PeopleResponse",
+                           namespace = ["example", "seed", "server", "protocol", "avro"]
+                         }
                    )
     it "should parse simple records" $
       parse parseSchema "" simpleRecord
@@ -197,9 +198,9 @@ main = hspec $ do
       parse parseMethod "" "bytes echoBytes(bytes data);"
         `shouldBe` (Right $ Method "echoBytes" [Argument Bytes "data"] Bytes Null False)
     it "should parse custom type messages" $
-      let custom = NamedType "TestRecord" in
-        parse parseMethod "" "TestRecord echo(TestRecord `record`);"
-          `shouldBe` (Right $ Method "echo" [Argument custom "record"] custom Null False)
+      let custom = NamedType "TestRecord"
+       in parse parseMethod "" "TestRecord echo(TestRecord `record`);"
+            `shouldBe` (Right $ Method "echo" [Argument custom "record"] custom Null False)
     it "should parse multiple argument messages" $
       parse parseMethod "" "int add(int arg1, int arg2);"
         `shouldBe` (Right $ Method "add" [Argument Int "arg1", Argument Int "arg2"] Int Null False)
