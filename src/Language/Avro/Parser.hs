@@ -3,19 +3,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 -- | Parser for AVRO (@.avdl@) files, as defined in <http://avro.apache.org/docs/1.8.2/spec.html>.
-module Language.Avro.Parser (
-  -- * Main parsers
-    parseProtocol
-  , readWithImports
-  -- * Intermediate parsers
-  , parseAliases
-  , parseAnnotation
-  , parseImport
-  , parseMethod
-  , parseNamespace
-  , parseOrder
-  , parseSchema
-  ) where
+module Language.Avro.Parser
+  ( -- * Main parsers
+    parseProtocol,
+    readWithImports,
+
+    -- * Intermediate parsers
+    parseAliases,
+    parseAnnotation,
+    parseImport,
+    parseMethod,
+    parseNamespace,
+    parseOrder,
+    parseSchema,
+  )
+where
 
 import Data.Avro
 import Data.Avro.Schema
@@ -25,10 +27,10 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, fromList)
 import Language.Avro.Types
+import System.FilePath
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
-import System.FilePath
 
 spaces :: MonadParsec Char T.Text m => m ()
 spaces = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
@@ -133,8 +135,8 @@ data ProtocolThing
 serviceThing :: MonadParsec Char T.Text m => m ProtocolThing
 serviceThing =
   try (ProtocolThingImport <$> parseImport)
-  <|> try (ProtocolThingMethod <$> parseMethod)
-  <|> ProtocolThingType <$> parseSchema
+    <|> try (ProtocolThingMethod <$> parseMethod)
+    <|> ProtocolThingType <$> parseSchema
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
@@ -222,9 +224,12 @@ parseFile :: Parsec e T.Text a -> String -> IO (Either (ParseErrorBundle T.Text 
 parseFile p file = runParser p file <$> T.readFile file
 
 -- | Reads and parses a whole file and its imports, recursively.
-readWithImports :: FilePath -- ^ base directory
-                -> FilePath -- ^ initial file
-                -> IO (Either (ParseErrorBundle T.Text Char) Protocol)
+readWithImports ::
+  -- | base directory
+  FilePath ->
+  -- | initial file
+  FilePath ->
+  IO (Either (ParseErrorBundle T.Text Char) Protocol)
 readWithImports baseDir initialFile = do
   initial <- parseFile parseProtocol (baseDir </> initialFile)
   case initial of
@@ -233,5 +238,5 @@ readWithImports baseDir initialFile = do
       let imps = [i | IdlImport i <- imports p]
       (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir . T.unpack) imps
       pure $ case lefts of
-        e:_ -> Left e
+        e : _ -> Left e
         _ -> Right $ foldl' (<>) p rights
