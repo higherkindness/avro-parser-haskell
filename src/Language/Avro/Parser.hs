@@ -11,6 +11,7 @@ module Language.Avro.Parser
     -- * Intermediate parsers
     parseAliases,
     parseAnnotation,
+    parseDecimal,
     parseImport,
     parseMethod,
     parseNamespace,
@@ -182,6 +183,15 @@ parseMethod =
     <*> option Null (reserved "throws" *> parseSchema)
     <*> option False (True <$ reserved "oneway")
     <* symbol ";"
+
+-- | Parses the special type @decimal@ into it's corresponding 'Decimal' structure.
+parseDecimal :: MonadParsec Char T.Text m => m Decimal
+parseDecimal = toDec <$ reserved "decimal" <*> parens (lexeme $ sepBy1 number $ symbol ",")
+  where
+    toDec :: [Int] -> Decimal
+    toDec [precision] = Decimal 0 precision -- see: https://avro.apache.org/docs/1.8.1/spec.html#Decimal
+    toDec [scale, precision] = Decimal scale precision
+    toDec _ = error "decimal types can only be specified using two numbers!"
 
 -- | Parses a single type respecting @Data.Avro.Schema@'s 'Schema'.
 parseSchema :: MonadParsec Char T.Text m => m Schema
