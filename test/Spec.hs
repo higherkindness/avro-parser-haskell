@@ -102,8 +102,8 @@ main = hspec $ do
       parse parseSchema "" "float" `shouldBe` Right Float
     it "should parse double" $
       parse parseSchema "" "double" `shouldBe` Right Double
-    it "should parse double" $ do
-      parse parseDecimal "" "decimal(4)" `shouldBe` (Right $ Decimal 0 4)
+    it "should parse decimal" $ do
+      parse parseDecimal "" "decimal(4)" `shouldBe` (Right $ Decimal 4 0)
       parse parseDecimal "" "decimal(15,2)" `shouldBe` (Right $ Decimal 15 2)
     it "should parse bytes" $
       parse parseSchema "" "bytes" `shouldBe` Right Bytes

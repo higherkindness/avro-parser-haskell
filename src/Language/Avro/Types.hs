@@ -73,6 +73,7 @@ data Method
 -- | Provisional type for decimals until they are landed in 'Data.Avro.Schema'.
 data Decimal
   = Decimal
-      Int
-      Int
+      { precision :: Int,
+        scale :: Int
+      }
   deriving (Eq, Show)

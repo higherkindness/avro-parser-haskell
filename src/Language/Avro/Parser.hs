@@ -189,8 +189,8 @@ parseDecimal :: MonadParsec Char T.Text m => m Decimal
 parseDecimal = toDec <$ reserved "decimal" <*> parens (lexeme $ sepBy1 number $ symbol ",")
   where
     toDec :: [Int] -> Decimal
-    toDec [precision] = Decimal 0 precision -- see: https://avro.apache.org/docs/1.8.1/spec.html#Decimal
-    toDec [scale, precision] = Decimal scale precision
+    toDec [precision] = Decimal precision 0 -- see: https://avro.apache.org/docs/1.8.1/spec.html#Decimal
+    toDec [precision, scale] = Decimal precision scale
     toDec _ = error "decimal types can only be specified using two numbers!"
 
 -- | Parses a single type respecting @Data.Avro.Schema@'s 'Schema'.
