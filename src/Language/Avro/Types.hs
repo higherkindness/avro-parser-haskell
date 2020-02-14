@@ -69,11 +69,3 @@ data Method
         oneway :: Bool
       }
   deriving (Eq, Show)
-
--- | Provisional type for decimals until they are landed in 'Data.Avro.Schema'.
-data Decimal
-  = Decimal
-      { precision :: Int,
-        scale :: Int
-      }
-  deriving (Eq, Show)
