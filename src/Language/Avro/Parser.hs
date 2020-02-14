@@ -204,6 +204,7 @@ parseSchema =
     <|> Float <$ reserved "float"
     <|> Double <$ reserved "double"
     <|> Bytes' <$ reserved "bytes"
+    <|> String (Just UUID) <$ reserved "uuid"
     <|> String' <$ reserved "string"
     <|> Array <$ reserved "array" <*> diamonds parseSchema
     <|> Map <$ reserved "map" <*> diamonds parseSchema
