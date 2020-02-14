@@ -11,6 +11,7 @@ module Language.Avro.Parser
     -- * Intermediate parsers
     parseAliases,
     parseAnnotation,
+    parseDecimal,
     parseImport,
     parseMethod,
     parseNamespace,
@@ -183,17 +184,28 @@ parseMethod =
     <*> option False (True <$ reserved "oneway")
     <* symbol ";"
 
+-- | Parses the special type @decimal@ into it's corresponding 'Decimal' structure.
+parseDecimal :: MonadParsec Char T.Text m => m Decimal
+parseDecimal = toDec <$ reserved "decimal" <*> parens (lexeme $ sepBy1 number $ symbol ",")
+  where
+    toDec :: [Int] -> Decimal
+    toDec [precision] = Decimal (fromIntegral precision) 0
+    toDec [precision, scale] = Decimal (fromIntegral precision) (fromIntegral scale)
+    toDec _ = error "decimal types can only be specified using two numbers!"
+
 -- | Parses a single type respecting @Data.Avro.Schema@'s 'Schema'.
 parseSchema :: MonadParsec Char T.Text m => m Schema
 parseSchema =
   Null <$ (reserved "null" <|> reserved "void")
     <|> Boolean <$ reserved "boolean"
-    <|> Int <$ reserved "int"
-    <|> Long <$ reserved "long"
+    <|> Int' <$ reserved "int"
+    <|> Long' <$ reserved "long"
+    <|> Long . Just . DecimalL <$> parseDecimal
     <|> Float <$ reserved "float"
     <|> Double <$ reserved "double"
-    <|> Bytes <$ reserved "bytes"
-    <|> String <$ reserved "string"
+    <|> Bytes' <$ reserved "bytes"
+    <|> String (Just UUID) <$ reserved "uuid"
+    <|> String' <$ reserved "string"
     <|> Array <$ reserved "array" <*> diamonds parseSchema
     <|> Map <$ reserved "map" <*> diamonds parseSchema
     <|> Union <$ reserved "union" <*> parseVector parseSchema
@@ -202,6 +214,7 @@ parseSchema =
           <$> option [] parseAliases <* reserved "fixed"
           <*> parseTypeName
           <*> parens number
+          <*> pure Nothing
       )
     <|> try
       ( flip Enum

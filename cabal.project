@@ -1,0 +1,6 @@
+packages: .
+
+source-repository-package
+    type: git
+    location: https://github.com/serras/avro.git
+    tag: c684139b773c296079a2941fb30ee43a52b66204
