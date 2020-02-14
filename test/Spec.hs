@@ -95,33 +95,38 @@ main = hspec $ do
     it "should parse boolean" $
       parse parseSchema "" "boolean" `shouldBe` Right Boolean
     it "should parse int" $
-      parse parseSchema "" "int" `shouldBe` Right Int
+      parse parseSchema "" "int" `shouldBe` Right Int'
     it "should parse long" $
-      parse parseSchema "" "long" `shouldBe` Right Long
+      parse parseSchema "" "long" `shouldBe` Right Long'
     it "should parse float" $
       parse parseSchema "" "float" `shouldBe` Right Float
     it "should parse double" $
       parse parseSchema "" "double" `shouldBe` Right Double
+    it "should parse decimal" $ do
+      parse parseDecimal "" "decimal(4)" `shouldBe` (Right $ Decimal 4 0)
+      parse parseDecimal "" "decimal(15,2)" `shouldBe` (Right $ Decimal 15 2)
     it "should parse bytes" $
-      parse parseSchema "" "bytes" `shouldBe` Right Bytes
+      parse parseSchema "" "bytes" `shouldBe` Right Bytes'
     it "should parse string" $
-      parse parseSchema "" "string" `shouldBe` Right String
+      parse parseSchema "" "string" `shouldBe` Right String'
+    it "should parse uuid" $
+      parse parseSchema "" "uuid" `shouldBe` Right (String (Just UUID))
     it "should parse array" $ do
-      parse parseSchema "" "array<int>" `shouldBe` (Right $ Array Int)
+      parse parseSchema "" "array<int>" `shouldBe` (Right $ Array Int')
       parse parseSchema "" "array<array<string>>"
-        `shouldBe` (Right $ Array $ Array String)
+        `shouldBe` (Right $ Array $ Array String')
     it "should parse map" $ do
-      parse parseSchema "" "map<int>" `shouldBe` (Right $ Map Int)
+      parse parseSchema "" "map<int>" `shouldBe` (Right $ Map Int')
       parse parseSchema "" "map<map<string>>"
-        `shouldBe` (Right $ Map $ Map String)
+        `shouldBe` (Right $ Map $ Map String')
     it "should parse unions" $
       parse parseSchema "" "union { string, int, null }"
-        `shouldBe` (Right $ Union $ fromList [String, Int, Null])
+        `shouldBe` (Right $ Union $ fromList [String', Int', Null])
     it "should parse fixeds" $ do
       parse parseSchema "" "fixed MD5(16)"
-        `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16)
+        `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16 Nothing)
       parse parseSchema "" "@aliases([\"org.foo.MD5\"])\nfixed MD5(16)"
-        `shouldBe` (Right $ Fixed (TN "MD5" []) ["org.foo.MD5"] 16)
+        `shouldBe` (Right $ Fixed (TN "MD5" []) ["org.foo.MD5"] 16 Nothing)
     it "should parse enums" $ do
       parse parseSchema "" enumTest
         `shouldBe` (Right $ Enum (TN "Kind" []) [TN "KindOf" ["org", "foo"]] Nothing (fromList ["FOO", "BAR", "BAZ"]))
@@ -143,8 +148,8 @@ main = hspec $ do
                          [TN "Person" ["org", "foo"]]
                          Nothing -- docs are ignored for now...
                          Nothing -- order is ignored for now...
-                         [ Field "name" [] Nothing Nothing String Nothing,
-                           Field "age" [] Nothing Nothing Int Nothing
+                         [ Field "name" [] Nothing Nothing String' Nothing,
+                           Field "age" [] Nothing Nothing Int' Nothing
                          ]
                    )
     it "should parse complex records" $
@@ -155,11 +160,11 @@ main = hspec $ do
                          []
                          Nothing -- docs are ignored for now...
                          Nothing -- order is ignored for now...
-                         [ Field "name" [] Nothing (Just Ignore) String Nothing,
+                         [ Field "name" [] Nothing (Just Ignore) String' Nothing,
                            Field "kind" [] Nothing (Just Descending) (NamedType "Kind") Nothing,
                            Field "hash" [] Nothing Nothing (NamedType "MD5") Nothing,
                            Field "nullableHash" ["hash"] Nothing Nothing (Union $ fromList [NamedType "MD5", Null]) Nothing,
-                           Field "arrayOfLongs" [] Nothing Nothing (Array Long) Nothing
+                           Field "arrayOfLongs" [] Nothing Nothing (Array Long') Nothing
                          ]
                    )
   describe "Parse protocols" $ do
@@ -193,17 +198,17 @@ main = hspec $ do
   describe "Parse services" $ do
     it "should parse simple messages" $
       parse parseMethod "" "string hello(string greeting);"
-        `shouldBe` (Right $ Method "hello" [Argument String "greeting"] String Null False)
+        `shouldBe` (Right $ Method "hello" [Argument String' "greeting"] String' Null False)
     it "should parse more simple messages" $
       parse parseMethod "" "bytes echoBytes(bytes data);"
-        `shouldBe` (Right $ Method "echoBytes" [Argument Bytes "data"] Bytes Null False)
+        `shouldBe` (Right $ Method "echoBytes" [Argument Bytes' "data"] Bytes' Null False)
     it "should parse custom type messages" $
       let custom = NamedType "TestRecord"
        in parse parseMethod "" "TestRecord echo(TestRecord `record`);"
             `shouldBe` (Right $ Method "echo" [Argument custom "record"] custom Null False)
     it "should parse multiple argument messages" $
       parse parseMethod "" "int add(int arg1, int arg2);"
-        `shouldBe` (Right $ Method "add" [Argument Int "arg1", Argument Int "arg2"] Int Null False)
+        `shouldBe` (Right $ Method "add" [Argument Int' "arg1", Argument Int' "arg2"] Int' Null False)
     it "should parse escaped and throwing messages" $
       parse parseMethod "" "void `error`() throws TestError;"
         `shouldBe` (Right $ Method "error" [] Null (NamedType $ TN "TestError" []) False)
