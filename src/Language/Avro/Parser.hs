@@ -20,6 +20,7 @@ module Language.Avro.Parser
   )
 where
 
+import Control.Monad (filterM)
 import Data.Avro
 import Data.Avro.Schema
 import Data.Either (partitionEithers)
@@ -28,6 +29,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, fromList)
 import Language.Avro.Types
+import System.Directory (doesFileExist)
 import System.FilePath
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -162,12 +164,12 @@ parseFieldAlias =
 
 parseField :: MonadParsec Char T.Text m => m Field
 parseField =
-  (\o t a n -> Field n a Nothing o t Nothing) -- FIXME: docs and default values are not supported yet.
+  (\o t a n -> Field n a Nothing o t Nothing) -- FIXME: docs are not supported yet.
     <$> optional parseOrder
     <*> parseSchema
     <*> option [] parseFieldAlias
     <*> identifier
-    <* symbol ";"
+    <* (symbol ";" <|> symbol "=" <* manyTill L.charLiteral (symbol ";")) -- FIXME: default values are not supported yet.
 
 -- | Parses arguments of methods into the 'Argument' structure.
 parseArgument :: MonadParsec Char T.Text m => m Argument
@@ -248,8 +250,10 @@ readWithImports baseDir initialFile = do
   case initial of
     Left e -> pure $ Left e
     Right p -> do
-      let imps = [i | IdlImport i <- imports p]
-      (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir . T.unpack) imps
+      let imps = T.unpack <$> [i | IdlImport i <- imports p]
+      let possibleImps = concatMap (\s -> [s, takeDirectory initialFile </> s]) imps
+      validFiles <- filterM (doesFileExist <$> (baseDir </>)) possibleImps
+      (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir) validFiles
       pure $ case lefts of
         e : _ -> Left e
         _ -> Right $ foldl' (<>) p rights
