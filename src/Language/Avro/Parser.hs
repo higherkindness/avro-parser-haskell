@@ -169,7 +169,7 @@ parseField =
     <*> parseSchema
     <*> option [] parseFieldAlias
     <*> identifier
-    <* (symbol ";" <|> symbol "=" <* manyTill L.charLiteral (symbol ";")) -- FIXME: default values are not supported yet.
+    <* (symbol ";" <|> symbol "=" <* manyTill anySingle (symbol ";")) -- FIXME: default values are not supported yet.
 
 -- | Parses arguments of methods into the 'Argument' structure.
 parseArgument :: MonadParsec Char T.Text m => m Argument
@@ -251,7 +251,7 @@ readWithImports baseDir initialFile = do
     Left e -> pure $ Left e
     Right p -> do
       let imps = T.unpack <$> [i | IdlImport i <- imports p]
-      let possibleImps = concatMap (\s -> [s, takeDirectory initialFile </> s]) imps
+      let possibleImps = imps >>= (\s -> [s, takeDirectory initialFile </> s])
       validFiles <- filterM (doesFileExist <$> (baseDir </>)) possibleImps
       (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir) validFiles
       pure $ case lefts of
