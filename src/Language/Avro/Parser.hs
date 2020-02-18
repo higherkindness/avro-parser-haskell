@@ -270,7 +270,6 @@ readWithImports baseDir initialFile = do
         (True, False) -> Right p
         (False, True) -> Right $ dir </> p
         (False, False) -> runParser (fail $ "Import not found: " ++ p) initialFile ""
-        (True, True) ->
-          if dir == "."
-            then Right p
-            else runParser (fail $ "Duplicate files found: " ++ p) initialFile ""
+        (True, True)
+          | normalise dir == "." -> Right p
+          | otherwise -> runParser (fail $ "Duplicate files found: " ++ p) initialFile ""

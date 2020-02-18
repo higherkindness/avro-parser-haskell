@@ -11,7 +11,7 @@ Language definition and parser for AVRO (`.avdl`) files.
 
 ```haskell
 #!/usr/bin/env stack
--- stack --resolver lts-14.23 script --package language-avro,megaparsec,pretty-simple
+-- stack --resolver lts-15.0 script --package language-avro,megaparsec,pretty-simple
 
 module Main where
 
