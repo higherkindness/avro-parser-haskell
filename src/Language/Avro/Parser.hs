@@ -139,7 +139,7 @@ serviceThing :: MonadParsec Char T.Text m => m ProtocolThing
 serviceThing =
   try (ProtocolThingImport <$> parseImport)
     <|> try (ProtocolThingMethod <$> parseMethod)
-    <|> ProtocolThingType <$> parseSchema
+    <|> ProtocolThingType <$> parseSchema <* optional (symbol ";")
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
@@ -262,11 +262,15 @@ readWithImports baseDir initialFile = do
   where
     oneOfTwo :: FilePath -> IO (Either (ParseErrorBundle T.Text Char) FilePath)
     oneOfTwo p = do
-      let path1 = baseDir </> p
-          path2 = baseDir </> takeDirectory initialFile </> p
+      let dir = takeDirectory initialFile
+          path1 = baseDir </> p
+          path2 = baseDir </> dir </> p
       options <- (,) <$> doesFileExist path1 <*> doesFileExist path2
       pure $ case options of
         (True, False) -> Right p
-        (False, True) -> Right $ takeDirectory initialFile </> p
+        (False, True) -> Right $ dir </> p
         (False, False) -> runParser (fail $ "Import not found: " ++ p) initialFile ""
-        (True, True) -> runParser (fail $ "Duplicate files found: " ++ p) initialFile ""
+        (True, True) ->
+          if dir == "."
+            then Right p
+            else runParser (fail $ "Duplicate files found: " ++ p) initialFile ""
