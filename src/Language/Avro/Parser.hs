@@ -238,6 +238,10 @@ parseSchema =
 parseFile :: Parsec e T.Text a -> String -> IO (Either (ParseErrorBundle T.Text e) a)
 parseFile p file = runParser p file <$> T.readFile file
 
+(>>>=) :: Either a b -> (b -> IO (Either a c)) -> IO (Either a c)
+Left x >>>= _ = pure (Left x)
+Right y >>>= f = f y
+
 -- | Reads and parses a whole file and its imports, recursively.
 readWithImports ::
   -- | base directory
@@ -250,10 +254,19 @@ readWithImports baseDir initialFile = do
   case initial of
     Left e -> pure $ Left e
     Right p -> do
-      let imps = T.unpack <$> [i | IdlImport i <- imports p]
-      let possibleImps = imps >>= (\s -> [s, takeDirectory initialFile </> s])
-      validFiles <- filterM (doesFileExist <$> (baseDir </>)) possibleImps
-      (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir) validFiles
+      possibleImps <- mapM (oneOfTwo . T.unpack) [i | IdlImport i <- imports p]
+      (lefts, rights) <- partitionEithers <$> traverse (>>>= readWithImports baseDir) possibleImps
       pure $ case lefts of
         e : _ -> Left e
         _ -> Right $ foldl' (<>) p rights
+  where
+    oneOfTwo :: FilePath -> IO (Either (ParseErrorBundle T.Text Char) FilePath)
+    oneOfTwo p = do
+      let path1 = baseDir </> p
+          path2 = baseDir </> takeDirectory initialFile </> p
+      options <- (,) <$> doesFileExist path1 <*> doesFileExist path2
+      pure $ case options of
+        (True, False) -> Right p
+        (False, True) -> Right $ takeDirectory initialFile </> p
+        (False, False) -> runParser (fail $ "Import not found: " ++ p) initialFile ""
+        (True, True) -> runParser (fail $ "Duplicate files found: " ++ p) initialFile ""
