@@ -1,3 +1,4 @@
 .stack-work
 dist*
 *.yaml.lock
+.DS_Store
