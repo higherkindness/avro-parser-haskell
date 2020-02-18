@@ -254,7 +254,7 @@ readWithImports baseDir initialFile = do
   case initial of
     Left e -> pure $ Left e
     Right p -> do
-      possibleImps <- mapM (oneOfTwo . T.unpack) [i | IdlImport i <- imports p]
+      possibleImps <- traverse (oneOfTwo . T.unpack) [i | IdlImport i <- imports p]
       (lefts, rights) <- partitionEithers <$> traverse (>>>= readWithImports baseDir) possibleImps
       pure $ case lefts of
         e : _ -> Left e
