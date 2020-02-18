@@ -7,6 +7,7 @@ module Language.Avro.Types
 where
 
 import Data.Avro.Schema
+import Data.List (nub)
 import qualified Data.Text as T
 
 -- | Whole definition of protocol.
@@ -25,9 +26,9 @@ instance Semigroup Protocol where
     Protocol
       (ns p1)
       (pname p1)
-      (imports p1 <> imports p2)
-      (types p1 <> types p2)
-      (messages p1 <> messages p2)
+      (nub (imports p1 <> imports p2))
+      (nub (types p1 <> types p2))
+      (nub (messages p1 <> messages p2))
 
 -- | Newtype for the namespace of methods and protocols.
 newtype Namespace

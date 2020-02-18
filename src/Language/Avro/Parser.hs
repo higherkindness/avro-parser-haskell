@@ -20,6 +20,7 @@ module Language.Avro.Parser
   )
 where
 
+import Control.Monad (filterM)
 import Data.Avro
 import Data.Avro.Schema
 import Data.Either (partitionEithers)
@@ -28,6 +29,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Data.Vector (Vector, fromList)
 import Language.Avro.Types
+import System.Directory (doesFileExist)
 import System.FilePath
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -137,7 +139,7 @@ serviceThing :: MonadParsec Char T.Text m => m ProtocolThing
 serviceThing =
   try (ProtocolThingImport <$> parseImport)
     <|> try (ProtocolThingMethod <$> parseMethod)
-    <|> ProtocolThingType <$> parseSchema
+    <|> ProtocolThingType <$> parseSchema <* optional (symbol ";")
 
 parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
 parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
@@ -162,12 +164,12 @@ parseFieldAlias =
 
 parseField :: MonadParsec Char T.Text m => m Field
 parseField =
-  (\o t a n -> Field n a Nothing o t Nothing) -- FIXME: docs and default values are not supported yet.
+  (\o t a n -> Field n a Nothing o t Nothing) -- FIXME: docs are not supported yet.
     <$> optional parseOrder
     <*> parseSchema
     <*> option [] parseFieldAlias
     <*> identifier
-    <* symbol ";"
+    <* (symbol ";" <|> symbol "=" <* manyTill anySingle (symbol ";")) -- FIXME: default values are not supported yet.
 
 -- | Parses arguments of methods into the 'Argument' structure.
 parseArgument :: MonadParsec Char T.Text m => m Argument
@@ -236,6 +238,10 @@ parseSchema =
 parseFile :: Parsec e T.Text a -> String -> IO (Either (ParseErrorBundle T.Text e) a)
 parseFile p file = runParser p file <$> T.readFile file
 
+(>>>=) :: Either a b -> (b -> IO (Either a c)) -> IO (Either a c)
+Left x >>>= _ = pure (Left x)
+Right y >>>= f = f y
+
 -- | Reads and parses a whole file and its imports, recursively.
 readWithImports ::
   -- | base directory
@@ -248,8 +254,22 @@ readWithImports baseDir initialFile = do
   case initial of
     Left e -> pure $ Left e
     Right p -> do
-      let imps = [i | IdlImport i <- imports p]
-      (lefts, rights) <- partitionEithers <$> traverse (readWithImports baseDir . T.unpack) imps
+      possibleImps <- traverse (oneOfTwo . T.unpack) [i | IdlImport i <- imports p]
+      (lefts, rights) <- partitionEithers <$> traverse (>>>= readWithImports baseDir) possibleImps
       pure $ case lefts of
         e : _ -> Left e
         _ -> Right $ foldl' (<>) p rights
+  where
+    oneOfTwo :: FilePath -> IO (Either (ParseErrorBundle T.Text Char) FilePath)
+    oneOfTwo p = do
+      let dir = takeDirectory initialFile
+          path1 = baseDir </> p
+          path2 = baseDir </> dir </> p
+      options <- (,) <$> doesFileExist path1 <*> doesFileExist path2
+      pure $ case options of
+        (True, False) -> Right p
+        (False, True) -> Right $ dir </> p
+        (False, False) -> runParser (fail $ "Import not found: " ++ p) initialFile ""
+        (True, True)
+          | normalise dir == "." -> Right p
+          | otherwise -> runParser (fail $ "Duplicate files found: " ++ p) initialFile ""
