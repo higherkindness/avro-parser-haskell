@@ -24,10 +24,10 @@ import Control.Monad (filterM)
 import Data.Avro
 import Data.Avro.Schema
 import Data.Either (partitionEithers)
-import Data.List (foldl')
+import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Data.Vector (Vector, fromList)
+import qualified Data.Vector as V
 import Language.Avro.Types
 import System.Directory (doesFileExist)
 import System.FilePath
@@ -126,9 +126,9 @@ parseProtocol =
       Protocol
         ns
         name
-        [i | ProtocolThingImport i <- things]
-        [t | ProtocolThingType t <- things]
-        [m | ProtocolThingMethod m <- things]
+        (S.fromList [i | ProtocolThingImport i <- things])
+        (S.fromList [t | ProtocolThingType t <- things])
+        (S.fromList [m | ProtocolThingMethod m <- things])
 
 data ProtocolThing
   = ProtocolThingImport ImportType
@@ -141,8 +141,8 @@ serviceThing =
     <|> try (ProtocolThingMethod <$> parseMethod)
     <|> ProtocolThingType <$> parseSchema <* optional (symbol ";")
 
-parseVector :: MonadParsec Char T.Text m => m a -> m (Vector a)
-parseVector t = fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
+parseVector :: MonadParsec Char T.Text m => m a -> m (V.Vector a)
+parseVector t = V.fromList <$> braces (lexeme $ sepBy1 t $ symbol ",")
 
 parseTypeName :: MonadParsec Char T.Text m => m TypeName
 parseTypeName = toNamedType . pure <$> identifier
@@ -238,7 +238,7 @@ parseSchema =
 parseFile :: Parsec e T.Text a -> String -> IO (Either (ParseErrorBundle T.Text e) a)
 parseFile p file = runParser p file <$> T.readFile file
 
-(>>>=) :: Either a b -> (b -> IO (Either a c)) -> IO (Either a c)
+(>>>=) :: Applicative m => Either a b -> (b -> m (Either a c)) -> m (Either a c)
 Left x >>>= _ = pure (Left x)
 Right y >>>= f = f y
 
@@ -254,11 +254,11 @@ readWithImports baseDir initialFile = do
   case initial of
     Left e -> pure $ Left e
     Right p -> do
-      possibleImps <- traverse (oneOfTwo . T.unpack) [i | IdlImport i <- imports p]
+      possibleImps <- traverse (oneOfTwo . T.unpack) [i | IdlImport i <- S.toList $ imports p]
       (lefts, rights) <- partitionEithers <$> traverse (>>>= readWithImports baseDir) possibleImps
       pure $ case lefts of
         e : _ -> Left e
-        _ -> Right $ foldl' (<>) p rights
+        _ -> Right $ S.foldl' (<>) p (S.fromList rights)
   where
     oneOfTwo :: FilePath -> IO (Either (ParseErrorBundle T.Text Char) FilePath)
     oneOfTwo p = do

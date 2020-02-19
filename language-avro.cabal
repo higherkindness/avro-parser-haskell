@@ -18,6 +18,7 @@ library
                        Language.Avro.Parser
   build-depends:       base >=4.12 && <5
                      , avro
+                     , containers
                      , directory
                      , filepath
                      , megaparsec
