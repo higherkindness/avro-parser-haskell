@@ -1,0 +1,4 @@
+cradle:
+  stack:
+    - path: "../"
+      component: "language-avro:test:avro-parser-haskell-test"
