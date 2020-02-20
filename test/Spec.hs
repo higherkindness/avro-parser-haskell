@@ -7,7 +7,7 @@ module Main
 where
 
 import Data.Avro.Schema
-import Data.Text as T hiding (tail)
+import qualified Data.Text as T
 import Data.Vector (fromList)
 import Language.Avro.Parser
 import Language.Avro.Types
