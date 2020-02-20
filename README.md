@@ -3,6 +3,7 @@
 [![Actions Status](https://github.com/kutyel/avro-parser-haskell/workflows/Haskell%20CI/badge.svg)](https://github.com/kutyel/avro-parser-haskell/actions)
 [![Hackage](https://img.shields.io/hackage/v/language-avro.svg?logo=haskell)](https://hackage.haskell.org/package/language-avro)
 [![Stackage Nightly](http://stackage.org/package/language-avro/badge/nightly)](http://stackage.org/nightly/package/language-avro)
+[![Stackage LTS](http://stackage.org/package/language-avro/badge/lts)](http://stackage.org/lts/package/language-avro)
 [![ormolu](https://img.shields.io/badge/styled%20with-ormolu-blueviolet)](https://github.com/tweag/ormolu)
 
 Language definition and parser for AVRO (`.avdl`) files.
