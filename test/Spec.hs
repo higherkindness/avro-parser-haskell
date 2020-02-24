@@ -12,7 +12,12 @@ import Data.Vector (fromList)
 import Language.Avro.Parser
 import Language.Avro.Types
 import Test.Hspec
+import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)
+import Text.Megaparsec.Error
+
+instance ShowErrorComponent Char where
+  showErrorComponent = show
 
 enumTest :: T.Text
 enumTest =
@@ -63,111 +68,107 @@ main = hspec $ do
   describe "Parse annotations" $ do
     it "should parse namespaces" $ do
       parse parseNamespace "" "@namespace(\"mynamespace\")"
-        `shouldBe` (Right $ Namespace ["mynamespace"])
+        `shouldParse` Namespace ["mynamespace"]
       parse parseNamespace "" "@namespace(\"org.apache.avro.test\")"
-        `shouldBe` (Right $ Namespace ["org", "apache", "avro", "test"])
+        `shouldParse` Namespace ["org", "apache", "avro", "test"]
     it "should parse ordering" $ do
-      parse parseOrder "" "@order(\"ascending\")" `shouldBe` Right Ascending
-      parse parseOrder "" "@order(\"descending\")" `shouldBe` Right Descending
-      parse parseOrder "" "@order(\"ignore\")" `shouldBe` Right Ignore
+      parse parseOrder "" "@order(\"ascending\")" `shouldParse` Ascending
+      parse parseOrder "" "@order(\"descending\")" `shouldParse` Descending
+      parse parseOrder "" "@order(\"ignore\")" `shouldParse` Ignore
     it "should parse aliases" $ do
       parse parseAliases "" "@aliases([\"org.foo.KindOf\"])"
-        `shouldBe` Right [TN "KindOf" ["org", "foo"]]
+        `shouldParse` [TN "KindOf" ["org", "foo"]]
       parse parseAliases "" "@aliases([\"org.old.OldRecord\", \"org.ancient.AncientRecord\"])"
-        `shouldBe` Right [TN "OldRecord" ["org", "old"], TN "AncientRecord" ["org", "ancient"]]
+        `shouldParse` [TN "OldRecord" ["org", "old"], TN "AncientRecord" ["org", "ancient"]]
     it "should parse other annotations" $ do
       parse parseAnnotation "" "@java-class(\"java.util.ArrayList\")"
-        `shouldBe` (Right $ Annotation "java-class" "java.util.ArrayList")
+        `shouldParse` Annotation "java-class" "java.util.ArrayList"
       parse parseAnnotation "" "@java-key-class(\"java.io.File\")"
-        `shouldBe` (Right $ Annotation "java-key-class" "java.io.File")
+        `shouldParse` Annotation "java-key-class" "java.io.File"
   describe "Parse imports" $ do
     it "should parse idl" $
       parse parseImport "" "import idl \"foo.avdl\";"
-        `shouldBe` (Right $ IdlImport "foo.avdl")
+        `shouldParse` IdlImport "foo.avdl"
     it "should parse protocol" $
       parse parseImport "" "import protocol \"foo.avpr\";"
-        `shouldBe` (Right $ ProtocolImport "foo.avpr")
+        `shouldParse` ProtocolImport "foo.avpr"
     it "should parse schema" $
       parse parseImport "" "import schema \"foo.avsc\";"
-        `shouldBe` (Right $ SchemaImport "foo.avsc")
+        `shouldParse` SchemaImport "foo.avsc"
   describe "Parse Data.Avro.Schema" $ do
     it "should parse null" $
-      parse parseSchema "" "null" `shouldBe` Right Null
+      parse parseSchema "" "null" `shouldParse` Null
     it "should parse boolean" $
-      parse parseSchema "" "boolean" `shouldBe` Right Boolean
+      parse parseSchema "" "boolean" `shouldParse` Boolean
     it "should parse int" $
-      parse parseSchema "" "int" `shouldBe` Right Int'
+      parse parseSchema "" "int" `shouldParse` Int'
     it "should parse long" $
-      parse parseSchema "" "long" `shouldBe` Right Long'
+      parse parseSchema "" "long" `shouldParse` Long'
     it "should parse float" $
-      parse parseSchema "" "float" `shouldBe` Right Float
+      parse parseSchema "" "float" `shouldParse` Float
     it "should parse double" $
-      parse parseSchema "" "double" `shouldBe` Right Double
+      parse parseSchema "" "double" `shouldParse` Double
     it "should parse decimal" $ do
-      parse parseDecimal "" "decimal(4)" `shouldBe` (Right $ Decimal 4 0)
-      parse parseDecimal "" "decimal(15,2)" `shouldBe` (Right $ Decimal 15 2)
+      parse parseDecimal "" "decimal(4)" `shouldParse` Decimal 4 0
+      parse parseDecimal "" "decimal(15,2)" `shouldParse` Decimal 15 2
     it "should parse bytes" $
-      parse parseSchema "" "bytes" `shouldBe` Right Bytes'
+      parse parseSchema "" "bytes" `shouldParse` Bytes'
     it "should parse string" $
-      parse parseSchema "" "string" `shouldBe` Right String'
+      parse parseSchema "" "string" `shouldParse` String'
     it "should parse uuid" $
-      parse parseSchema "" "uuid" `shouldBe` Right (String (Just UUID))
+      parse parseSchema "" "uuid" `shouldParse` String (Just UUID)
     it "should parse array" $ do
-      parse parseSchema "" "array<int>" `shouldBe` (Right $ Array Int')
+      parse parseSchema "" "array<int>" `shouldParse` Array Int'
       parse parseSchema "" "array<array<string>>"
-        `shouldBe` (Right $ Array $ Array String')
+        `shouldParse` Array (Array String')
     it "should parse map" $ do
-      parse parseSchema "" "map<int>" `shouldBe` (Right $ Map Int')
+      parse parseSchema "" "map<int>" `shouldParse` Map Int'
       parse parseSchema "" "map<map<string>>"
-        `shouldBe` (Right $ Map $ Map String')
+        `shouldParse` Map (Map String')
     it "should parse unions" $
       parse parseSchema "" "union { string, int, null }"
-        `shouldBe` (Right $ Union $ fromList [String', Int', Null])
+        `shouldParse` Union (fromList [String', Int', Null])
     it "should parse fixeds" $ do
       parse parseSchema "" "fixed MD5(16)"
-        `shouldBe` (Right $ Fixed (TN "MD5" []) [] 16 Nothing)
+        `shouldParse` Fixed (TN "MD5" []) [] 16 Nothing
       parse parseSchema "" "@aliases([\"org.foo.MD5\"])\nfixed MD5(16)"
-        `shouldBe` (Right $ Fixed (TN "MD5" []) ["org.foo.MD5"] 16 Nothing)
+        `shouldParse` Fixed (TN "MD5" []) ["org.foo.MD5"] 16 Nothing
     it "should parse enums" $ do
       parse parseSchema "" enumTest
-        `shouldBe` (Right $ Enum (TN "Kind" []) [TN "KindOf" ["org", "foo"]] Nothing (fromList ["FOO", "BAR", "BAZ"]))
+        `shouldParse` Enum (TN "Kind" []) [TN "KindOf" ["org", "foo"]] Nothing (fromList ["FOO", "BAR", "BAZ"])
       parse parseSchema "" "enum Suit { SPADES, DIAMONDS, CLUBS, HEARTS }"
-        `shouldBe` (Right $ Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"]))
+        `shouldParse` Enum (TN "Suit" []) [] Nothing (fromList ["SPADES", "DIAMONDS", "CLUBS", "HEARTS"])
     it "should parse named types" $
       parse parseSchema "" "example.seed.server.protocol.avro.PeopleResponse"
-        `shouldBe` ( Right $ NamedType $
-                       TN
-                         { baseName = "PeopleResponse",
-                           namespace = ["example", "seed", "server", "protocol", "avro"]
-                         }
-                   )
+        `shouldParse` NamedType
+          ( TN
+              { baseName = "PeopleResponse",
+                namespace = ["example", "seed", "server", "protocol", "avro"]
+              }
+          )
     it "should parse simple records" $
       parse parseSchema "" simpleRecord
-        `shouldBe` ( Right $
-                       Record
-                         (TN "Person" [])
-                         [TN "Person" ["org", "foo"]]
-                         Nothing -- docs are ignored for now...
-                         Nothing -- order is ignored for now...
-                         [ Field "name" [] Nothing Nothing String' Nothing,
-                           Field "age" [] Nothing Nothing Int' Nothing
-                         ]
-                   )
+        `shouldParse` Record
+          (TN "Person" [])
+          [TN "Person" ["org", "foo"]]
+          Nothing -- docs are ignored for now...
+          Nothing -- order is ignored for now...
+          [ Field "name" [] Nothing Nothing String' Nothing,
+            Field "age" [] Nothing Nothing Int' Nothing
+          ]
     it "should parse complex records" $
       parse parseSchema "" complexRecord
-        `shouldBe` ( Right $
-                       Record
-                         (TN "TestRecord" [])
-                         []
-                         Nothing -- docs are ignored for now...
-                         Nothing -- order is ignored for now...
-                         [ Field "name" [] Nothing (Just Ignore) String' Nothing,
-                           Field "kind" [] Nothing (Just Descending) (NamedType "Kind") Nothing,
-                           Field "hash" [] Nothing Nothing (NamedType "MD5") Nothing,
-                           Field "nullableHash" ["hash"] Nothing Nothing (Union $ fromList [NamedType "MD5", Null]) Nothing,
-                           Field "arrayOfLongs" [] Nothing Nothing (Array Long') Nothing
-                         ]
-                   )
+        `shouldParse` Record
+          (TN "TestRecord" [])
+          []
+          Nothing -- docs are ignored for now...
+          Nothing -- order is ignored for now...
+          [ Field "name" [] Nothing (Just Ignore) String' Nothing,
+            Field "kind" [] Nothing (Just Descending) (NamedType "Kind") Nothing,
+            Field "hash" [] Nothing Nothing (NamedType "MD5") Nothing,
+            Field "nullableHash" ["hash"] Nothing Nothing (Union $ fromList [NamedType "MD5", Null]) Nothing,
+            Field "arrayOfLongs" [] Nothing Nothing (Array Long') Nothing
+          ]
   describe "Parse protocols" $ do
     let getPerson =
           Method
@@ -178,41 +179,32 @@ main = hspec $ do
             False
     it "should parse with imports" $
       parse parseProtocol "" (T.unlines . tail $ simpleProtocol)
-        `shouldBe` ( Right $
-                       Protocol
-                         Nothing
-                         "PeopleService"
-                         [IdlImport "People.avdl"]
-                         []
-                         [getPerson]
-                   )
+        `shouldParse` Protocol Nothing "PeopleService" [IdlImport "People.avdl"] [] [getPerson]
     it "should parse with namespace" $
       parse parseProtocol "" (T.unlines simpleProtocol)
-        `shouldBe` ( Right $
-                       Protocol
-                         (Just (Namespace ["example", "seed", "server", "protocol", "avro"]))
-                         "PeopleService"
-                         [IdlImport "People.avdl"]
-                         []
-                         [getPerson]
-                   )
+        `shouldParse` Protocol
+          (Just (Namespace ["example", "seed", "server", "protocol", "avro"]))
+          "PeopleService"
+          [IdlImport "People.avdl"]
+          []
+          [getPerson]
   describe "Parse services" $ do
     it "should parse simple messages" $
       parse parseMethod "" "string hello(string greeting);"
-        `shouldBe` (Right $ Method "hello" [Argument String' "greeting"] String' Null False)
+        `shouldParse` Method "hello" [Argument String' "greeting"] String' Null False
     it "should parse more simple messages" $
       parse parseMethod "" "bytes echoBytes(bytes data);"
-        `shouldBe` (Right $ Method "echoBytes" [Argument Bytes' "data"] Bytes' Null False)
+        `shouldParse` Method "echoBytes" [Argument Bytes' "data"] Bytes' Null False
     it "should parse custom type messages" $
       let custom = NamedType "TestRecord"
        in parse parseMethod "" "TestRecord echo(TestRecord `record`);"
-            `shouldBe` (Right $ Method "echo" [Argument custom "record"] custom Null False)
+            `shouldParse` Method "echo" [Argument custom "record"] custom Null False
     it "should parse multiple argument messages" $
       parse parseMethod "" "int add(int arg1, int arg2);"
-        `shouldBe` (Right $ Method "add" [Argument Int' "arg1", Argument Int' "arg2"] Int' Null False)
+        `shouldParse` Method "add" [Argument Int' "arg1", Argument Int' "arg2"] Int' Null False
     it "should parse escaped and throwing messages" $
       parse parseMethod "" "void `error`() throws TestError;"
-        `shouldBe` (Right $ Method "error" [] Null (NamedType $ TN "TestError" []) False)
+        `shouldParse` Method "error" [] Null (NamedType $ TN "TestError" []) False
     it "should parse oneway messages" $
       parse parseMethod "" "void ping() oneway;"
-        `shouldBe` (Right $ Method "ping" [] Null Null True)
+        `shouldParse` Method "ping" [] Null Null True
