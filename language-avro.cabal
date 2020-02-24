@@ -44,4 +44,5 @@ test-suite avro-parser-haskell-test
     , megaparsec
     , text
     , hspec
+    , hspec-megaparsec
     , vector
