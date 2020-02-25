@@ -17,7 +17,7 @@ library
   exposed-modules:     Language.Avro.Types,
                        Language.Avro.Parser
   build-depends:       base >=4.12 && <5
-                     , avro
+                     , avro >=0.4.7
                      , containers
                      , directory
                      , filepath
@@ -39,7 +39,7 @@ test-suite avro-parser-haskell-test
       -with-rtsopts=-N
   build-depends:
       base >=4.12 && <5
-    , avro
+    , avro >=0.4.7
     , language-avro
     , megaparsec
     , text
