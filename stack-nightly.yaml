@@ -3,5 +3,4 @@ packages:
 - .
 extra-deps:
 - HasBigDecimal-0.1.1
-- git: https://github.com/serras/avro.git
-  commit: c684139b773c296079a2941fb30ee43a52b66204
+- avro-0.4.7.0

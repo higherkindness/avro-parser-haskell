@@ -1,5 +1,3 @@
-{-# LANGUAGE StandaloneDeriving #-}
-
 -- | Language definition for AVRO (@.avdl@) files,
 --   as defined in <http://avro.apache.org/docs/1.8.2/spec.html>.
 module Language.Avro.Types
@@ -32,24 +30,6 @@ instance Semigroup Protocol where
       (imports p1 <> imports p2)
       (types p1 <> types p2)
       (messages p1 <> messages p2)
-
-deriving instance Ord LogicalTypeInt
-
-deriving instance Ord LogicalTypeLong
-
-deriving instance Ord LogicalTypeBytes
-
-deriving instance Ord Decimal
-
-deriving instance Ord LogicalTypeString
-
-deriving instance Ord LogicalTypeFixed
-
-deriving instance (Ord a) => Ord (Value a)
-
-deriving instance Ord Field
-
-deriving instance Ord Schema
 
 -- | Newtype for the namespace of methods and protocols.
 newtype Namespace
