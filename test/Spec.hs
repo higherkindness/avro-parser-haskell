@@ -46,6 +46,7 @@ simpleRecord =
       "record Person {",
       "string name;",
       "int age;",
+      "date birthday;",
       "}"
     ]
 
@@ -111,6 +112,12 @@ main = hspec $ do
     it "should parse decimal" $ do
       parse parseDecimal "" "decimal(4)" `shouldParse` Decimal 4 0
       parse parseDecimal "" "decimal(15,2)" `shouldParse` Decimal 15 2
+    it "should parse date" $
+      parse parseSchema "" "date" `shouldParse` Int (Just Date)
+    it "should parse time" $
+      parse parseSchema "" "time_ms" `shouldParse` Int (Just TimeMillis)
+    it "should parse timestamp" $
+      parse parseSchema "" "timestamp_ms" `shouldParse` Long (Just TimestampMillis)
     it "should parse bytes" $
       parse parseSchema "" "bytes" `shouldParse` Bytes'
     it "should parse string" $
@@ -154,7 +161,8 @@ main = hspec $ do
           Nothing -- docs are ignored for now...
           Nothing -- order is ignored for now...
           [ Field "name" [] Nothing Nothing String' Nothing,
-            Field "age" [] Nothing Nothing Int' Nothing
+            Field "age" [] Nothing Nothing Int' Nothing,
+            Field "birthday" [] Nothing Nothing (Int (Just Date)) Nothing
           ]
     it "should parse complex records" $
       parse parseSchema "" complexRecord
