@@ -201,8 +201,11 @@ parseSchema =
   Null <$ (reserved "null" <|> reserved "void")
     <|> Boolean <$ reserved "boolean"
     <|> Int' <$ reserved "int"
+    <|> Int (Just Date) <$ reserved "date"
+    <|> Int (Just TimeMillis) <$ reserved "time_ms"
     <|> Long' <$ reserved "long"
     <|> Long . Just . DecimalL <$> parseDecimal
+    <|> Long (Just TimestampMillis) <$ reserved "timestamp_ms"
     <|> Float <$ reserved "float"
     <|> Double <$ reserved "double"
     <|> Bytes' <$ reserved "bytes"
