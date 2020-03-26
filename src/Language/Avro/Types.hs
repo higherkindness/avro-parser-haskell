@@ -6,8 +6,7 @@ module Language.Avro.Types
   )
 where
 
-import Data.Avro.Schema
-import Data.Avro.Types.Value
+import Data.Avro
 import Data.Set
 import qualified Data.Text as T
 
