@@ -6,7 +6,7 @@ module Main
   )
 where
 
-import Data.Avro.Schema
+import Data.Avro
 import qualified Data.Text as T
 import Data.Vector (fromList)
 import Language.Avro.Parser
@@ -162,7 +162,7 @@ main = hspec $ do
           Nothing -- order is ignored for now...
           [ Field "name" [] Nothing Nothing String' Nothing,
             Field "age" [] Nothing Nothing Int' Nothing,
-            Field "birthday" [] Nothing Nothing (Int (Just Date)) Nothing
+            Field "birthday" [] Nothing Nothing (Int (Just Date)) Nothing
           ]
     it "should parse complex records" $
       parse parseSchema "" complexRecord
