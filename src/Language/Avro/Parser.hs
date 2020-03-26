@@ -22,7 +22,6 @@ where
 
 import Control.Monad (filterM)
 import Data.Avro
-import Data.Avro.Schema
 import Data.Either (partitionEithers)
 import qualified Data.Set as S
 import qualified Data.Text as T
