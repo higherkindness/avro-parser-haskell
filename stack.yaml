@@ -2,4 +2,4 @@ resolver: lts-15.5
 packages:
 - .
 extra-deps:
-- avro-0.5.0.0
+- avro-0.5.1.0
