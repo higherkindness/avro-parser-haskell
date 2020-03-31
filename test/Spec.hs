@@ -159,7 +159,6 @@ main = hspec $ do
           (TN "Person" [])
           [TN "Person" ["org", "foo"]]
           Nothing -- docs are ignored for now...
-          Nothing -- order is ignored for now...
           [ Field "name" [] Nothing Nothing String' Nothing,
             Field "age" [] Nothing Nothing Int' Nothing,
             Field "birthday" [] Nothing Nothing (Int (Just Date)) Nothing
@@ -170,7 +169,6 @@ main = hspec $ do
           (TN "TestRecord" [])
           []
           Nothing -- docs are ignored for now...
-          Nothing -- order is ignored for now...
           [ Field "name" [] Nothing (Just Ignore) String' Nothing,
             Field "kind" [] Nothing (Just Descending) (NamedType "Kind") Nothing,
             Field "hash" [] Nothing Nothing (NamedType "MD5") Nothing,
