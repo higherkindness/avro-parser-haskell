@@ -1,6 +1,5 @@
-resolver: nightly-2020-02-20
+resolver: nightly-2020-03-30
 packages:
 - .
 extra-deps:
-- HasBigDecimal-0.1.1
-- avro-0.4.7.0
+- avro-0.5.1.0
