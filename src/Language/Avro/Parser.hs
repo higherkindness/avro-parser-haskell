@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -233,10 +232,6 @@ parseSchema =
           <$> option [] parseAliases <* (reserved "record" <|> reserved "error")
           <*> parseTypeName
           <*> pure Nothing -- docs are ignored for now...
-#if MIN_VERSION_avro(0,5,1)
-#else
-          <*> optional parseOrder -- FIXME: order for records is not supported yet.
-#endif
           <*> option [] (braces . many $ parseField)
       )
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
