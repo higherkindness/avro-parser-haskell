@@ -21,8 +21,8 @@ library
     Language.Avro.Types
 
   build-depends:
-      avro        >=0.5
-    , base        >=4.12 && <5
+      avro        >=0.5.1
+    , base        >=4.12  && <5
     , containers
     , directory
     , filepath
@@ -40,8 +40,8 @@ test-suite avro-parser-haskell-test
   hs-source-dirs:   test
   ghc-options:      -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      avro              >=0.5
-    , base              >=4.12 && <5
+      avro              >=0.5.1
+    , base              >=4.12  && <5
     , hspec
     , hspec-megaparsec
     , language-avro
