@@ -5,8 +5,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ["8.8.3", "9.2.1"]
-        cabal: ["3.0", "3.6.2"]
+        ghc: ["8.10.7", "9.2.1"]
+        cabal: ["3.6.2"]
     steps:
       - uses: actions/checkout@v2.4.0
       - uses: actions/setup-haskell@v1.1.4
