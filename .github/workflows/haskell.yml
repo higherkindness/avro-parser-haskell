@@ -5,25 +5,24 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        ghc: ["8.8.3", "9.2.1"]
-        cabal: ["3.6.2"]
+        ghc: ["8.10.7", "9.2.1"]
     steps:
       - uses: actions/checkout@v2.4.0
-      - uses: actions/setup-haskell@v1.1.4
+      - uses: haskell/actions/setup@v1
         with:
           ghc-version: ${{ matrix.ghc }}
-          cabal-version: ${{ matrix.cabal }}
+          enable-stack: true
+          stack-version: latest
       - uses: actions/cache@v2.1.7
-        name: Cache ~/.cabal/store
+        name: Cache Stack
         with:
-          path: ~/.cabal/store
-          key: ${{ runner.os }}-${{ matrix.ghc }}-cabal-store
-      - name: Install dependencies
-        run: |
-          cabal new-update
-          cabal new-configure --write-ghc-environment-files=always -j2
-          cabal new-build --only-dependencies
+          path: |
+            ~/.stack
+            .stack-work
+          key: ${{ runner.os }}-stack-${{ hashFiles('stack.yaml.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-stack
       - name: Build & Run Tests
         run: |
-          cabal v2-build
-          cabal v2-test
+          stack build
+          stack test
