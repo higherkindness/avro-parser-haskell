@@ -7,19 +7,22 @@ module Language.Avro.Types
 where
 
 import Data.Avro
-import Data.Set
+import Data.Set (Set)
 import qualified Data.Text as T
+import Text.Megaparsec.Error (ShowErrorComponent (..))
 
 -- | Whole definition of protocol.
-data Protocol
-  = Protocol
-      { ns :: Maybe Namespace,
-        pname :: T.Text,
-        imports :: Set ImportType,
-        types :: Set Schema,
-        messages :: Set Method
-      }
+data Protocol = Protocol
+  { ns :: Maybe Namespace,
+    pname :: T.Text,
+    imports :: Set ImportType,
+    types :: Set Schema,
+    messages :: Set Method
+  }
   deriving (Eq, Show, Ord)
+
+instance ShowErrorComponent Char where
+  showErrorComponent = show
 
 instance Semigroup Protocol where
   p1 <> p2 =
@@ -38,11 +41,10 @@ newtype Namespace
 type Aliases = [TypeName]
 
 -- | Type for special annotations.
-data Annotation
-  = Annotation
-      { ann :: T.Text,
-        abody :: T.Text
-      }
+data Annotation = Annotation
+  { ann :: T.Text,
+    abody :: T.Text
+  }
   deriving (Eq, Show)
 
 -- | Type for the possible import types in 'Protocol'.
@@ -53,20 +55,18 @@ data ImportType
   deriving (Eq, Show, Ord)
 
 -- | Helper type for the arguments of 'Method'.
-data Argument
-  = Argument
-      { atype :: Schema,
-        aname :: T.Text
-      }
+data Argument = Argument
+  { atype :: Schema,
+    aname :: T.Text
+  }
   deriving (Eq, Show, Ord)
 
 -- | Type for methods/messages that belong to a protocol.
-data Method
-  = Method
-      { mname :: T.Text,
-        args :: [Argument],
-        result :: Schema,
-        throws :: Schema,
-        oneway :: Bool
-      }
+data Method = Method
+  { mname :: T.Text,
+    args :: [Argument],
+    result :: Schema,
+    throws :: Schema,
+    oneway :: Bool
+  }
   deriving (Eq, Show, Ord)
