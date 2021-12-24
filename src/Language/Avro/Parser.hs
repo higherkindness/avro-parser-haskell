@@ -33,6 +33,7 @@ import System.FilePath
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Error (errorBundlePretty)
 
 spaces :: MonadParsec Char T.Text m => m ()
 spaces = L.space space1 (L.skipLineComment "//") (L.skipBlockComment "/*" "*/")
@@ -105,9 +106,9 @@ parseAliases = multiNamedTypes <$> parseFieldAlias
 parseImport :: MonadParsec Char T.Text m => m ImportType
 parseImport =
   reserved "import"
-    *> ( impHelper IdlImport "idl"
-           <|> impHelper ProtocolImport "protocol"
-           <|> impHelper SchemaImport "schema"
+    *> ( (impHelper IdlImport "idl" <?> "Import of type IDL")
+           <|> (impHelper ProtocolImport "protocol" <?> "Import of type protocol")
+           <|> (impHelper SchemaImport "schema" <?> "Import of type schema")
        )
   where
     impHelper :: MonadParsec Char T.Text m => (T.Text -> a) -> T.Text -> m a
@@ -149,7 +150,7 @@ parseTypeName = toNamedType . pure <$> identifier
 -- | Parses order annotations into the 'Order' structure.
 parseOrder :: MonadParsec Char T.Text m => m Order
 parseOrder =
-  symbol "@" *> reserved "order"
+  symbol "@" *> (reserved "order" <?> "Order can be ascending/descending/ignore")
     *> parens
       ( Ascending <$ string "\"ascending\""
           <|> Descending <$ string "\"descending\""
@@ -164,11 +165,12 @@ parseFieldAlias =
 parseField :: MonadParsec Char T.Text m => m Field
 parseField =
   (\o t a n -> Field n a Nothing o t Nothing) -- FIXME: docs are not supported yet.
-    <$> optional parseOrder
-    <*> parseSchema
-    <*> option [] parseFieldAlias
-    <*> identifier
-    <* (symbol ";" <|> symbol "=" <* manyTill anySingle (symbol ";")) -- FIXME: default values are not supported yet.
+    <$> optional (parseOrder <?> "Order of the field in the schema")
+    <*> (parseSchema <?> "Type of the field in the schema")
+    <*> (option [] parseFieldAlias <?> "Aliases of the field in the schema")
+    <*> (identifier <?> "Name of the field in the schema")
+    -- FIXME: default values are not supported yet.
+    <* ((symbol ";" <|> symbol "=" <* manyTill anySingle (symbol ";")) <?> "Semicolon or equals sign")
 
 -- | Parses arguments of methods into the 'Argument' structure.
 parseArgument :: MonadParsec Char T.Text m => m Argument
@@ -178,12 +180,12 @@ parseArgument = Argument <$> parseSchema <*> identifier
 parseMethod :: MonadParsec Char T.Text m => m Method
 parseMethod =
   (\r n a t o -> Method n a r t o)
-    <$> parseSchema
-    <*> identifier
-    <*> parens (option [] (lexeme $ sepBy1 parseArgument $ symbol ","))
-    <*> option Null (reserved "throws" *> parseSchema)
-    <*> option False (True <$ reserved "oneway")
-    <* symbol ";"
+    <$> (parseSchema <?> "Result type of the method")
+    <*> (identifier <?> "Name of the method")
+    <*> (parens (option [] (lexeme $ sepBy1 parseArgument $ symbol ",")) <?> "Arguments of the method")
+    <*> (option Null (reserved "throws" *> parseSchema) <?> "If the method throws an exception")
+    <*> (option False (True <$ reserved "oneway") <?> "If the method is `oneway` or not")
+    <* (symbol ";" <?> "Should end with a semicolon")
 
 -- | Parses the special type @decimal@ into it's corresponding 'Decimal' structure.
 parseDecimal :: MonadParsec Char T.Text m => m Decimal
@@ -224,14 +226,14 @@ parseSchema =
       ( flip Enum
           <$> option [] parseAliases <* reserved "enum"
           <*> parseTypeName
-          <*> pure Nothing -- docs are ignored for now...
+          <*> pure Nothing -- FIXME: docs are ignored for now...
           <*> parseVector identifier
       )
     <|> try
       ( flip Record
           <$> option [] parseAliases <* (reserved "record" <|> reserved "error")
           <*> parseTypeName
-          <*> pure Nothing -- docs are ignored for now...
+          <*> pure Nothing -- FIXME: docs are ignored for now...
           <*> option [] (braces . many $ parseField)
       )
     <|> NamedType . toNamedType <$> lexeme (sepBy1 identifier $ char '.')
@@ -249,11 +251,11 @@ readWithImports ::
   FilePath ->
   -- | initial file
   FilePath ->
-  IO (Either (ParseErrorBundle T.Text Char) Protocol)
+  IO (Either T.Text Protocol)
 readWithImports baseDir initialFile = do
   initial <- parseFile parseProtocol (baseDir </> initialFile)
   case initial of
-    Left e -> pure $ Left e
+    Left err -> pure $ Left $ T.pack (errorBundlePretty err)
     Right p -> do
       possibleImps <- traverse (oneOfTwo . T.unpack) [i | IdlImport i <- S.toList $ imports p]
       (lefts, rights) <- partitionEithers <$> traverse (>>>= readWithImports baseDir) possibleImps
@@ -261,7 +263,7 @@ readWithImports baseDir initialFile = do
         e : _ -> Left e
         _ -> Right $ S.foldl' (<>) p (S.fromList rights)
   where
-    oneOfTwo :: FilePath -> IO (Either (ParseErrorBundle T.Text Char) FilePath)
+    oneOfTwo :: FilePath -> IO (Either T.Text FilePath)
     oneOfTwo p = do
       let dir = takeDirectory initialFile
           path1 = baseDir </> p
@@ -270,7 +272,7 @@ readWithImports baseDir initialFile = do
       pure $ case options of
         (True, False) -> Right p
         (False, True) -> Right $ dir </> p
-        (False, False) -> runParser (fail $ "Import not found: " ++ p) initialFile ""
+        (False, False) -> Left $ T.pack ("Import not found: " ++ p)
         (True, True)
           | normalise dir == "." -> Right p
-          | otherwise -> runParser (fail $ "Duplicate files found: " ++ p) initialFile ""
+          | otherwise -> Left $ T.pack ("Duplicate files found: " ++ p)

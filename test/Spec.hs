@@ -1,10 +1,7 @@
 {-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Main
-  ( main,
-  )
-where
+module Main (main) where
 
 import Data.Avro
 import qualified Data.Text as T
@@ -16,53 +13,65 @@ import Test.Hspec.Megaparsec
 import Text.Megaparsec (parse)
 import Text.Megaparsec.Error
 
-instance ShowErrorComponent Char where
-  showErrorComponent = show
-
 enumTest :: T.Text
 enumTest =
-  T.unlines
-    [ "@aliases([\"org.foo.KindOf\"])",
-      "enum Kind {",
-      "FOO,",
-      "BAR, // the bar enum value",
-      "BAZ",
-      "}"
-    ]
+  "@aliases([\"org.foo.KindOf\"])\n\
+  \enum Kind {\n\
+  \  FOO,\n\
+  \  BAR, // the bar enum value\n\
+  \  BAZ\n\
+  \}"
 
-simpleProtocol :: [T.Text]
+simpleProtocol :: T.Text
 simpleProtocol =
-  [ "@namespace(\"example.seed.server.protocol.avro\")",
-    "protocol PeopleService {",
-    "import idl \"People.avdl\";",
-    "example.seed.server.protocol.avro.PeopleResponse getPerson(example.seed.server.protocol.avro.PeopleRequest request);",
-    "}"
-  ]
+  "@namespace(\"example.seed.server.protocol.avro\")\n\
+  \protocol PeopleService {\n\
+  \import idl \"People.avdl\";\n\
+  \example.seed.server.protocol.avro.PeopleResponse getPerson(example.seed.server.protocol.avro.PeopleRequest request);\n\
+  \}"
 
 simpleRecord :: T.Text
 simpleRecord =
-  T.unlines
-    [ "@aliases([\"org.foo.Person\"])",
-      "record Person {",
-      "string name;",
-      "int age;",
-      "date birthday;",
-      "}"
-    ]
+  "@aliases([\"org.foo.Person\"])\n\
+  \record Person {\n\
+  \  string name;\n\
+  \  int age;\n\
+  \  date birthday;\n\
+  \}"
 
 complexRecord :: T.Text
 complexRecord =
-  T.unlines
-    [ "record TestRecord {",
-      "@order(\"ignore\")",
-      "string name;",
-      "@order(\"descending\")",
-      "Kind kind;",
-      "MD5 hash;",
-      "union { MD5, null} @aliases([\"hash\"]) nullableHash;",
-      "array<long> arrayOfLongs;",
-      "}"
-    ]
+  "record TestRecord {\n\
+  \  @order(\"ignore\")\n\
+  \  string name;\n\
+  \  @order(\"descending\")\n\
+  \  Kind kind;\n\
+  \  MD5 hash;\n\
+  \  union { MD5, null} @aliases([\"hash\"]) nullableHash;\n\
+  \  array<long> arrayOfLongs;\n\
+  \}"
+
+avdlWithTypo :: T.Text
+avdlWithTypo =
+  "@namespace(\"integrationtest\") \n\
+  \protocol WeatherService { \n\
+  \  record GetForecastRequest { \n\
+  \    // NOTE: missing semicolon\n\
+  \    string city\n\
+  \    int days_required;\n\
+  \  }\n\
+  \  enum Weather {\n\
+  \    SUNNY,\n\
+  \    CLOUDY,\n\
+  \    RAINY\n\
+  \  }\n\
+  \  record GetForecastResponse {\n\
+  \    string last_updated;\n\
+  \    array<Weather> daily_forecasts;\n\
+  \  }\n\
+  \  void ping();\n\
+  \  GetForecastResponse getForecast(GetForecastRequest req);\n\
+  \}"
 
 main :: IO ()
 main = hspec $ do
@@ -183,17 +192,49 @@ main = hspec $ do
             (NamedType "example.seed.server.protocol.avro.PeopleResponse")
             Null
             False
-    it "should parse with imports" $
-      parse parseProtocol "" (T.unlines . tail $ simpleProtocol)
-        `shouldParse` Protocol Nothing "PeopleService" [IdlImport "People.avdl"] [] [getPerson]
     it "should parse with namespace" $
-      parse parseProtocol "" (T.unlines simpleProtocol)
+      parse parseProtocol "" simpleProtocol
         `shouldParse` Protocol
           (Just (Namespace ["example", "seed", "server", "protocol", "avro"]))
           "PeopleService"
           [IdlImport "People.avdl"]
           []
           [getPerson]
+    it "should not parse protocols with typos" $
+      parse parseProtocol "" avdlWithTypo
+        `shouldFailWith` err
+          86
+          ( utok '{'
+              <> etoks "array"
+              <> etoks "boolean"
+              <> etoks "bytes"
+              <> etoks "date"
+              <> etoks "decimal"
+              <> etoks "double"
+              <> etoks "enum"
+              <> etoks "error"
+              <> etoks "fixed"
+              <> etoks "float"
+              <> etoks "import"
+              <> etoks "int"
+              <> etoks "long"
+              <> etoks "map"
+              <> etoks "null"
+              <> etoks "record"
+              <> etoks "string"
+              <> etoks "time_ms"
+              <> etoks "timestamp_ms"
+              <> etoks "union"
+              <> etoks "uuid"
+              <> etoks "void"
+              <> etok '.'
+              <> etok ';' -- This is the actual one missing 🤔
+              <> etok '@'
+              <> etok '`'
+              <> etok '}'
+              <> elabel "Result type of the method"
+              <> elabel "letter"
+          )
   describe "Parse services" $ do
     it "should parse simple messages" $
       parse parseMethod "" "string hello(string greeting);"
