@@ -13,21 +13,17 @@ Language definition and parser for AVRO (`.avdl`) files.
 
 ```haskell
 #!/usr/bin/env stack
--- stack --resolver lts-15.0 script --package language-avro,megaparsec,pretty-simple
+-- stack --resolver lts-18.19 script --package language-avro,pretty-simple
 
 module Main where
 
 import Language.Avro.Parser (readWithImports)
-import Text.Megaparsec.Error (ShowErrorComponent (..), errorBundlePretty)
 import Text.Pretty.Simple (pPrint)
-
-instance ShowErrorComponent Char where
-  showErrorComponent = show
 
 main :: IO ()
 main =
   readWithImports "test" "PeopleService.avdl"
-    >>= either (putStrLn . errorBundlePretty) pPrint
+    >>= either putStrLn pPrint
 -- λ>
 -- Protocol
 --   { ns = Just
