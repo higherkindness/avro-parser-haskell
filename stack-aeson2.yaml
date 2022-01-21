@@ -1,0 +1,6 @@
+resolver: nightly-2022-01-20
+packages:
+  - .
+extra-deps:
+- aeson-2.0.3.0
+- avro-0.6.0.0

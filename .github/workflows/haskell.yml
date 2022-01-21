@@ -26,3 +26,7 @@ jobs:
         run: |
           stack build
           stack test
+      - name: Build & Run Tests with Aeson 2.0 & Avro 0.6
+        run: |
+          stack build --stack-yaml stack-aeson2.yaml
+          stack test --stack-yaml stack-aeson2.yaml
