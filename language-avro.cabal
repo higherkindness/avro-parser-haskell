@@ -4,7 +4,9 @@ synopsis:           Language definition and parser for AVRO files.
 description:
   Parser for the AVRO language specification, see README.md for more details.
 
-homepage:           https://github.com/kutyel/avro-parser-haskell#readme
+homepage:
+  https://github.com/higherkindness/avro-parser-haskell#readme
+
 license:            Apache-2.0
 license-file:       LICENSE
 author:             Flavio Corpa
@@ -14,6 +16,10 @@ category:           Network
 build-type:         Simple
 cabal-version:      >=1.10
 extra-source-files: README.md
+
+source-repository head
+  type:     git
+  location: git://github.com/higherkindness/avro-parser-haskell.git
 
 library
   exposed-modules:
